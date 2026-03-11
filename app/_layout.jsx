@@ -1,4 +1,5 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
@@ -13,7 +14,9 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   const [loaded, error] = useFonts({
-    'Montserrat': require('./assets/fonts/Inter-Black.otf'),
+    'Montserrat': require('../assets/fonts/Montserrat/static/Montserrat-Regular.ttf'),
+    "MontserratItalic":require('../assets/fonts/Montserrat/static/Montserrat-Italic.ttf'),
+    "MontserratBold": require('../assets/fonts/Montserrat/static/Montserrat-Bold.ttf')
   });
 
   return (
