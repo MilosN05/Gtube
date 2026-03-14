@@ -62,8 +62,9 @@ export default function HomeScreen() {
        </View>
        
        <View>
-        <Text style={{fontFamily:"MontserratRegular",fontSize:22, color:"white", letterSpacing:4}}>{"\n"}NEDAVNA PUŠTANJA</Text>
-        <ScrollView style={{ paddingTop:15,maxHeight:"80%"}} contentContainerStyle={{display:"flex", flexDirection:"row",gap:20}}>
+        <Text style={{fontFamily:"MontserratBold",fontSize:18, color:"white", letterSpacing:4}}>{"\n"}NEDAVNA PUŠTANJA</Text>
+        <View style={{display:"flex"}}>
+        <ScrollView style={{ paddingTop:15}} contentContainerStyle={{display:"flex", flexDirection:"row",gap:20}} horizontal >
 
           <View style={{height:"145", width:"140", gap:10}}>
             <TouchableOpacity>
@@ -123,6 +124,15 @@ export default function HomeScreen() {
 
 
         </ScrollView>
+
+        <LinearGradient colors={["transparent", "#111425"]}
+        start={{ x: 0, y: 0 }}
+                
+                // End at bottom-right
+        end={{ x: 1, y: 1 }} 
+        style={styles.gradient} />
+        
+        </View>
        </View>
        </View>
       </View>
@@ -155,6 +165,16 @@ const styles = StyleSheet.create({
   baza: {
     flex:1,
     backgroundColor:"#0f1427"
+  },
+   gradient: {
+            position:"absolute",
+
+    zIndex:100,
+    bottom:69.8,
+    left:0,
+    right:0,
+    height:60,
+    pointerEvents:"none"
   }
 });
 
