@@ -1,7 +1,8 @@
 import Checkbox from "expo-checkbox";
-import { Image } from "expo-image";
+import { Image, ImageBackground } from "expo-image";
 
 import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
 import { useState } from "react";
 import { Button, Modal, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -14,13 +15,13 @@ export default function signIn() {
     
 
         <LinearGradient
-                          colors={[ "#F99E69","#ED7C6B", "#D8486E"]}
-                    
-                            start={{ x: 0, y: 0 }}
-                            locations={[0, 0.35, 0.8]}
-                            end={{ x: 1, y: 1 }}
-                    
-                            style={{height:"100%",  backgroundColor:"green", borderBottomRightRadius:60, zIndex:333}}>
+        colors={[ "#F99E69","#ED7C6B", "#D8486E"]}
+
+        start={{ x: 0, y: 0 }}
+        locations={[0, 0.35, 0.8]}
+        end={{ x: 1, y: 1 }}
+
+        style={{height:"100%",  backgroundColor:"green", borderBottomRightRadius:60, zIndex:333}}>
 
 
         
@@ -28,12 +29,12 @@ export default function signIn() {
              <LinearGradient
                 colors={[ "transparent","rgba(0,0,0,0.2)"]}
                 style={{
-                position: "absolute",   // 👈 important
-                bottom: "45%",          // 👈 aligns with top of white view
+                position: "absolute",   
+                bottom: "45%",          
                 borderRadius:20,
                 left: 0,
                 right: 0,
-                height: 60,             // small = shadow effect
+                height: 60,             
                 zIndex: 1,
                 }}
   />
@@ -52,12 +53,12 @@ export default function signIn() {
                         </View>
                     </View>
                 </Modal>
-
-                <View style={{height:"50%", display:"flex", justifyContent:"center", alignItems:"center"}}>
-                    <View>
-                        <Image source={require("../../assets/images/currentLogo.png")} style={{width:250, height:250}}></Image>
+                
+                <ImageBackground style={{height:"50%", display:"flex", justifyContent:"center", alignItems:"center", opacity:0.04, zIndex:1}} source={require("../../assets/images/Saban4K.jpg")}>
+                    <View >
+                        <Image  style={{width:250, height:250}}></Image>
                     </View>
-                </View>
+                </ImageBackground>
                 <View style={{height:"50%", backgroundColor:"white", borderTopLeftRadius:37, borderTopRightRadius:37, zIndex:5}}>
                     <SafeAreaView style={{paddingTop:25,paddingBottom:25, paddingLeft:35, paddingRight:35,  height:"100%", gap:30}}>
                         <View style={{ height:"43%", display:"flex", justifyContent:"space-between"}}>
@@ -87,7 +88,7 @@ export default function signIn() {
                             </View>
                             <View style={{flexDirection:"row", alignItems:"center", justifyContent:"center", display:"flex"}}>
                                 <Text style={{fontFamily:"Montserrat"}}>Nemate nalog?</Text>
-                                <TouchableOpacity><Text style={{fontFamily:"MontserratBold", color:"#EC786B"}}> REGISTRUJ SE</Text></TouchableOpacity>
+                                <TouchableOpacity onPress={()=>router.push("signup")}><Text style={{fontFamily:"MontserratBold", color:"#EC786B"}}> REGISTRUJ SE</Text></TouchableOpacity>
                             </View>
                         </View>
                     </SafeAreaView>
