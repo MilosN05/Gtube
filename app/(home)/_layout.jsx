@@ -35,11 +35,12 @@ export default function TabLayout() {
     }}
     
  >
-      <Tabs.Screen name="index" options={{headerShown:false, tabBarIcon:({size, color})=> <Ionicons name="home-outline" size={30} color={color}></Ionicons>}} ></Tabs.Screen>
-      <Tabs.Screen name="bookmark" options={{headerShown:false, tabBarIcon:({size, color})=> <Ionicons name="bookmarks-outline" size={30} color={color}></Ionicons>}} ></Tabs.Screen>
-      <Tabs.Screen name="search" options={{headerShown:false, tabBarIcon:({size, color})=> <Ionicons name="search-outline" size={30} color={color}></Ionicons>}} ></Tabs.Screen>
+      <Tabs.Screen name="main" options={{headerShown:false, tabBarIcon:({size, color})=> <Ionicons name="home-outline" size={30} color={color}></Ionicons>}} ></Tabs.Screen>
+      <Tabs.Screen name="profile" options={{headerShown:false, tabBarIcon:({size, color})=> <Ionicons name="person-outline" size={30} color={color}></Ionicons>}} ></Tabs.Screen>
+      <Tabs.Screen name="upload" options={{headerShown:false, tabBarIcon:({size, color})=> <Ionicons name="cloud-upload-outline" size={30} color={color}></Ionicons>}} ></Tabs.Screen>
 
-      <Tabs.Screen name="upload" options={{headerShown:false, tabBarIcon:({size, color})=> <Ionicons name="cloud-circle-outline" size={30} color={color}></Ionicons>}} ></Tabs.Screen>
+      <Tabs.Screen name="bookmark" options={{headerShown:false, tabBarIcon:({size, color})=> <Ionicons name="bookmarks-outline" size={30} color={color}></Ionicons>}} ></Tabs.Screen>
+
 
     </Tabs>
     </View>

@@ -4,10 +4,11 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { router } from 'expo-router'
 import { useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { useAudioPro } from 'react-native-audio-pro'
 
 export function player() {
 
-
+    const { state, position, duration, playingTrack, playbackSpeed, volume, error } = useAudioPro();
     let [vrednost, setVrednost] = useState(0)
     return (
       

@@ -69,7 +69,7 @@ export default function HomeScreen() {
 
 
           <View style={{height:"145", width:"140", gap:10, }}>
-            <TouchableOpacity onPress={()=> {router.push("/(mplay)")}}>
+            <TouchableOpacity onPress={()=> {router.push("/(mplay)/audio")}}>
               <LinearGradient
               colors={[ '#f17b5d', '#f02fc2']}
         

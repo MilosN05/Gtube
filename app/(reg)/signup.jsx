@@ -71,6 +71,17 @@ export default function signIn() {
                 <TextInput placeholder="Potvrda Šifre" style={{fontFamily:"MontserratBold", fontSize:15, paddingLeft:0 }} secureTextEntry></TextInput>
                 <View style={{ backgroundColor:"#EC786B",height:2, borderRadius:20}}></View>
             </View>
+
+            <View style={{display:"flex", justifyContent:"space-evenly", flex:1}}>
+                            <View style={{backgroundColor:"#EC786B", height:"60", display:"flex", justifyContent:'center', alignItems:"center", borderRadius:10}}>
+                                
+                                <TouchableOpacity><Text style={{fontFamily:"MontserratBold", color:"white"}}>ULOGUJ SE</Text></TouchableOpacity>
+                            </View>
+                            <View style={{flexDirection:"row", alignItems:"center", justifyContent:"center", display:"flex"}}>
+                                <Text style={{fontFamily:"Montserrat", color:"black"}}>Već imate nalog?</Text>
+                                <TouchableOpacity onPress={()=>router.back()}><Text style={{fontFamily:"MontserratBold", color:"#EC786B"}}> ULOGUJ SE</Text></TouchableOpacity>
+                            </View>
+            </View>
         </View>
     </LinearGradient> 
     )
