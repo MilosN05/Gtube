@@ -3,13 +3,37 @@ import { AudioPro, AudioProContentType, AudioProEventType } from 'react-native-a
 
 let tracks = []
 let current_index = 0
-let shuffle_index =0
+
+let tracks_shuffled = []
+
 
 export function setTracks(track_of_songs) {
 	current_index =0
 	tracks = track_of_songs
 
 }
+
+export function load_shuffled(sign_shuffle) {
+	if (!sign_shuffle) {
+		tracks_shuffled=[]
+		return
+	}
+	if (tracks.length)
+		return
+
+
+	tracks_shuffled.push(tracks[current_index])
+
+	let i=1;
+	while (tracks_shuffled.length!=tracks.length) {
+		let song = tracks[Math.floor(Math.random()*tracks.length)]
+
+		if (!tracks_shuffled.includes(song))
+			tracks_shuffled[i++]=tracks[song]
+	}
+}
+
+
 
 
 export function play_previous() {
@@ -65,5 +89,5 @@ function determineNextTrack(napred) {
 		current_index-=1
 	
 	// console.log(current_index)
-	return tracks[current_index]
+	return tracks_shuffled.length>0 ?  tracks_shuffled[current_index]:tracks[current_index]
 }
