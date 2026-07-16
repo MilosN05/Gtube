@@ -3,11 +3,12 @@ import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
 import { router } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
-import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 import Slider from '@react-native-community/slider'
 import { AudioPro, AudioProContentType, AudioProState, useAudioPro } from 'react-native-audio-pro'
 import { load_shuffled, play_next, play_previous, setTracks } from '../../setupAudio'
+
 
 
 async function get_data(funkcija) {
@@ -61,6 +62,7 @@ export function player() {
     const { state, position, duration, playingTrack, playbackSpeed, volume, error } = useAudioPro();
     let [vrednost, setVrednost] = useState(0)
     let [podaci, ucitaj_podatke] = useState({})
+    let [lyrics_visible, set_lyrics_visible] = useState(false)
     // console.log(playingTrack)
     useEffect(()=> {
 
@@ -138,6 +140,75 @@ export function player() {
       style={{ flex: 1, padding:25, display:"flex"}}
 
       >
+
+      <Modal visible={lyrics_visible} animationType="slide">
+        
+          <LinearGradient
+          
+          colors={["#d26b3f","#864b31","#744b2b","#64431b"]}
+
+          // colors={["#68493C", "#32202E", "#111425"]}
+          locations={[0,0.6, 0.8,0.9]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={{flex:1,display:"flex",justifyContent:"center", alignItems:"center"}}>
+            
+            <View style={{ gap:15, display:"flex", width:"100%",padding:25}}>
+              <View style={{display:"flex",flexDirection:"row", alignItems:"center",width:"100%",justifyContent:"space-between"}}>
+                <View style={{display:"flex",flexDirection:"row", alignItems:"center",gap:15 }} >
+                  <View style={styles.coverShadow}>
+                    <Image source={{uri:playingTrack?.artwork}} style={{width:64, height:64, borderRadius:4}}></Image>
+                  </View>
+                  <View>
+                    <Text style={{color:"white", fontFamily:"MontserratBold"}}>{playingTrack?.title}</Text>
+                    <Text style={{color:"white"}}>{playingTrack?.artist}</Text>
+                  </View>
+                </View>
+                <TouchableOpacity onPress={()=>set_lyrics_visible(false)}><Ionicons name="close-outline"  size={32} color={"white"}></Ionicons></TouchableOpacity>
+                
+              </View>
+              <View style={{width:"100%"}}>
+                <Text style={{fontFamily:"MontserratBold", color:"#4d1700", fontSize:13}}>Ovaj tekst nije sinhronizovan za pesmom, za sada.</Text>
+                
+              </View>
+             
+              
+            </View>
+
+            <View style={{width:"100%",  flex:1}}>
+            
+              <LinearGradient colors={["#c55d31","transparent"]} 
+                style={{
+                position:"absolute",
+                zIndex: 100,
+                left: 0,
+                top:0,
+                right: 0,
+                height: 40,
+                // pointerEvents: "none"
+                }} />
+      
+              <ScrollView >
+                
+                <View style={{paddingLeft:25, paddingRight:25, width:"100%"}}>
+                  <Text style={{fontFamily:"MontserratBold", fontSize:25, color:"white"}}>
+                    {playingTrack?.lyrics} 
+                  </Text>
+                </View>
+                </ScrollView>
+            </View>
+          <LinearGradient colors={[ "transparent","#4a2607"]} 
+                        style={{
+                        position:"absolute",
+                        zIndex: 100,
+                        left: 0,
+                        bottom:0,
+                        right: 0,
+                        height: 40,
+                        // pointerEvents: "none"
+                        }} />
+          </LinearGradient>
+      </Modal>
       <View style={{height:"40%", display:"flex", gap:40}}>
         <View style={{display:"flex", justifyContent:"space-between", alignItems:"center",  flexDirection:"row", marginTop:10}}>
          
@@ -189,7 +260,15 @@ export function player() {
         <View style={{ paddingTop:50}}>
           <View style={{flexDirection:"row", display:"flex", justifyContent:"space-between"}}>
             <TouchableOpacity onPress={()=>{}}><Ionicons name="heart-outline"size={30} color={"white"}></Ionicons></TouchableOpacity>
-            <TouchableOpacity onPress={()=>{}}><Ionicons name="volume-high-outline" size={30} color={"white"}></Ionicons></TouchableOpacity>
+            <TouchableOpacity onPress={()=>{
+              let ispunjen_uslov = AudioPro.getVolume()==1
+              if (ispunjen_uslov) {
+                AudioPro.setVolume(0)
+              }
+              else {
+                AudioPro.setVolume(1)
+              }
+              }}><Ionicons name={AudioPro.getVolume()==1 ? `volume-high-outline`:`volume-mute-outline`} size={30} color={"white"}></Ionicons></TouchableOpacity>
           </View>
           {/* <View style={{display:"flex", justifyContent:"center", alignItems:"center"}}> */}
            {/* <LinearGradient
@@ -280,7 +359,10 @@ export function player() {
       </View>
       
       <View style={{display:"flex",justifyContent:"center", alignItems:"center", paddingTop:50}}>
-        <TouchableOpacity style={{display:"flex",justifyContent:"center", alignItems:"center",}} onPress={()=>{}}>
+        <TouchableOpacity style={{display:"flex",justifyContent:"center", alignItems:"center",}} onPress={()=>{
+          if (playingTrack?.lyrics)
+            set_lyrics_visible(!lyrics_visible)
+        }}>
         <Ionicons name="chevron-up" color={"white"} size={32}></Ionicons>
         <Text style={{fontFamily:"Montserrat", color:"white"}}>Lyrics</Text>
         </TouchableOpacity>
@@ -354,5 +436,18 @@ const styles = StyleSheet.create({
         width: "100%",
         height: 60,
         
-    }
+    },
+coverShadow: {
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+
+    // Android
+    elevation: 8,
+  },
+    
 });

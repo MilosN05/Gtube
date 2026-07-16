@@ -60,7 +60,7 @@ export default function uploadF() {
                             let linkR = text.nativeEvent.text;
                             if (linkR.startsWith("https://youtu.be")) {
 
-                              let socket = new  WebSocket("ws://192.168.0.16:8000/objavaSnimaka/")
+                              let socket = new  WebSocket("ws://192.168.1.68:8000/objavaSnimaka/")
                               socket.addEventListener("open", (event)=> {
                                 socket.send(JSON.stringify({link: linkR}))
                               })
