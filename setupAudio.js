@@ -46,6 +46,11 @@ export function play_next() {
 	AudioPro.play(nextTrackFromRemote);
 }
 
+export function play_by_index(index) {{
+	current_index=index;
+	AudioPro.play(tracks[index]);
+}}
+
 export function setupAudio() {
 	// Configure audio settings
 	AudioPro.configure({

@@ -3,17 +3,17 @@ import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
 import { router } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
-import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Animated, FlatList, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 import Slider from '@react-native-community/slider'
 import { AudioPro, AudioProContentType, AudioProState, useAudioPro } from 'react-native-audio-pro'
-import { load_shuffled, play_next, play_previous, setTracks } from '../../setupAudio'
+import { load_shuffled, play_by_index, play_next, play_previous, setTracks } from '../../setupAudio'
 
 
 
 async function get_data(funkcija) {
   try {
-    const response = await fetch("http://192.168.1.68:8000/nasumicniZapisi/",
+    const response = await fetch("http://192.168.0.16:8000/nasumicniZapisi/",
       {
       method:"POST",
       body: new URLSearchParams(
@@ -27,14 +27,14 @@ async function get_data(funkcija) {
   }
 
   const data = await response.json()
-  // data.artwork = "http://192.168.1.68:8000"+data.artwork
-  // data.url= "http://192.168.1.68:8000"+data.url
+  // data.artwork = "http://192.168.0.16:8000"+data.artwork
+  // data.url= "http://192.168.0.16:8000"+data.url
   // data.url = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
 
 
   data.forEach((data)=> {
-    data.artwork = "http://192.168.1.68:8000"+data.artwork
-    data.url= "http://192.168.1.68:8000"+data.url
+    data.artwork = "http://192.168.0.16:8000"+data.artwork
+    data.url= "http://192.168.0.16:8000"+data.url
   })
     // console.log(data)
 
@@ -61,8 +61,9 @@ export function player() {
     
     const { state, position, duration, playingTrack, playbackSpeed, volume, error } = useAudioPro();
     let [vrednost, setVrednost] = useState(0)
-    let [podaci, ucitaj_podatke] = useState({})
+    let [podaci, ucitaj_podatke] = useState([])
     let [lyrics_visible, set_lyrics_visible] = useState(false)
+    let [list_of_songs_visible, set_ls_visible] = useState(false)
     // console.log(playingTrack)
     useEffect(()=> {
 
@@ -84,13 +85,14 @@ export function player() {
         AudioPro.play(podaci[0])
     },[podaci])
 
-
     useEffect(()=> {
-      if (playingTrack)
+      if (playingTrack) {
+        set_lyrics_visible(false)
         switch_song()
+        }
     }, [playingTrack]) 
 
-
+    
 
 
     const opacity = useRef(new Animated.Value(1)).current;
@@ -141,6 +143,149 @@ export function player() {
 
       >
 
+      <Modal visible={list_of_songs_visible} animationType="slide">
+        <LinearGradient
+          
+          colors={["#d26b3f","#864b31","#744b2b","#64431b"]}
+
+          // colors={["#68493C", "#32202E", "#111425"]}
+          locations={[0,0.6, 0.8,0.9]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={{flex:1,display:"flex", alignItems:"center",gap:20}}>
+
+
+        <View style={{display:"flex", flexDirection:"row", alignItems:"flex-end" ,width:"100%",borderBottomColor:"#c45627",borderBottomWidth:1.5,height:"8%", paddingBottom:8}}>
+          <TouchableOpacity onPress={()=> set_ls_visible(false)} style={{zIndex:52, marginLeft:25}}><Ionicons name="close-outline" size={32} color={"white"} /></TouchableOpacity>
+          <Text style={{fontFamily:"MontserratBold", fontSize:15, color:"white", textAlign:"center", width:"100%", position:"absolute", zIndex:50, bottom:8}}>Queue</Text>
+        </View>
+
+        <View style={{width:"100%", gap:16, paddingLeft:25, paddingRight:25}}>
+          <Text style={{color:"white", fontFamily:"MontserratBold", fontSize:20, includeFontPadding:false}}>Trenutno pušteno</Text>
+           <View style={{display:"flex",flexDirection:"row", alignItems:"center",gap:15, width:"100%" }} >
+              <View style={styles.coverShadow}>
+                <Image source={{uri:playingTrack?.artwork}} style={{width:64, height:64, borderRadius:4}}></Image>
+              </View>
+              <View style={{flex:1}}>
+                <Text style={{color:"#F6C26B", fontFamily:"MontserratBold", }} numberOfLines={1} ellipsizeMode='tail'>{playingTrack?.title}</Text>
+                <Text style={{color:"white", fontFamily:"Montserrat"}} numberOfLines={1} ellipsizeMode='tail'>{playingTrack?.artist}</Text>
+              </View>
+            </View>
+        </View>
+
+
+        <View style={{flex:1,width:"100%", gap:16, paddingLeft:25, paddingRight:25}}>
+          <Text style={{color:"white", fontFamily:"MontserratBold", fontSize:20}}>Sledi</Text>
+          <View style={{flex:1}}>
+            {/* <LinearGradient colors={["#c55d31","transparent"]} 
+              style={{
+              position:"absolute",
+              zIndex: 100,
+              left: 0,
+              top:0,
+              right: 0,
+              height: 70,
+              // pointerEvents: "none"
+              }} /> */}
+    
+            <FlatList
+              data={podaci}
+              renderItem={({item, index}) => {
+                
+                let is_current = playingTrack?.id==item.id
+                return (
+                <View style={{display:"flex",flexDirection:"row", alignItems:"center",gap:15, width:"100%", backgroundColor: is_current ? "rgba(255,255,255,0.08)": "transparent"}} >
+                  <TouchableOpacity style={styles.coverShadow} onPress={()=> {
+                    play_by_index(index)
+                  }}>
+                    <Image source={{uri:item.artwork}} style={{width:64, height:64, borderRadius:4}}></Image>
+                  </TouchableOpacity>
+                  <View style={{flex:1}}>
+                    <Text style={{color:"white", fontFamily:"MontserratBold", }} numberOfLines={1} ellipsizeMode='tail'>{item.title}</Text>
+                    <Text style={{color:"white", fontFamily:"Montserrat"}} numberOfLines={1} ellipsizeMode='tail'>{item.artist}</Text>
+                  </View>
+                </View>
+              )}}
+
+              contentContainerStyle={{
+                gap:10,
+                display:"flex"
+              }}
+            >
+              
+              {/* <View style={{paddingLeft:25, paddingRight:25, width:"100%"}}>
+                <Text style={{fontFamily:"MontserratBold", fontSize:25, color:"white"}}>
+                  {playingTrack?.lyrics} 
+                </Text>
+              </View> */}
+
+              
+            </FlatList>
+
+{/* 
+            <LinearGradient colors={[ "rgba(111,73,46,0)",
+                    "rgba(111,73,46,0.2)",
+                    "rgba(111,73,46,0.6)",
+                    "#6f492e"]} 
+                    style={{
+                    position:"absolute",
+                    zIndex: 100,
+                    left: 0,
+                    bottom:0,
+                    right: 0,
+                    height: 70,
+                    // pointerEvents: "none"
+                    }} />  */}
+          </View>
+        </View>
+
+        <View style={{display:"flex",justifyContent:"center",alignItems:"center", width:"100%",paddingLeft:25, paddingRight:25,marginBottom:25}}>
+                  <View style={{width:"100%"}}>
+                    <Slider
+                    style={{
+                      width: "100%",
+                      height: 20,
+                    }}
+                    minimumValue={0}
+                    maximumValue={duration}
+                    value={position}
+                    onSlidingComplete={AudioPro.seekTo}
+                    minimumTrackTintColor="#ff9f43"
+                    maximumTrackTintColor="gray"
+                    thumbTintColor="white"
+                    />
+                    <View style={{display:"flex", flexDirection:"row", justifyContent:"space-between"}}>
+                      <Text style={{fontFamily:"Montserrat", color:"white", fontSize:15}}>{to_seconds(position)}</Text>
+                      <Text style={{fontFamily:"Montserrat", color:"white", fontSize:15}}>{to_seconds(duration)}</Text>
+
+                    </View>
+                  </View>
+                  
+                  <LinearGradient 
+                  colors={["#FA9C6A", "#E2636F"]}
+                      
+                  style={{borderRadius:999, padding:20}}>
+                  <Animated.View style={{ opacity }}>
+                    <Ionicons name={AudioPro.getState()==AudioProState.PLAYING ? `pause`:"play"} color={"white"} size={30} onPress={()=> {
+                      
+                      toggleIcon()
+                      if (AudioPro.getState()==AudioProState.PLAYING)
+                        AudioPro.pause()
+                      else {
+                        AudioPro.resume()
+                      }
+                    }}></Ionicons>  
+                  </Animated.View>
+                  </LinearGradient>
+             
+        </View>
+
+
+        </LinearGradient>
+
+
+      </Modal>
+
       <Modal visible={lyrics_visible} animationType="slide">
         
           <LinearGradient
@@ -159,61 +304,111 @@ export function player() {
                   <View style={styles.coverShadow}>
                     <Image source={{uri:playingTrack?.artwork}} style={{width:64, height:64, borderRadius:4}}></Image>
                   </View>
-                  <View>
-                    <Text style={{color:"white", fontFamily:"MontserratBold"}}>{playingTrack?.title}</Text>
-                    <Text style={{color:"white"}}>{playingTrack?.artist}</Text>
+                  <View style={{flex:1}}>
+                    <Text style={{color:"#F6C26B", fontFamily:"MontserratBold"}} numberOfLines={1} ellipsizeMode='tail'>{playingTrack?.title}</Text>
+                    <Text style={{color:"white"}} numberOfLines={1} ellipsizeMode='tail'>{playingTrack?.artist}</Text>
                   </View>
+                  <TouchableOpacity onPress={()=>set_lyrics_visible(false)}><Ionicons name="close-outline"  size={32} color={"white"}></Ionicons></TouchableOpacity>
+
                 </View>
-                <TouchableOpacity onPress={()=>set_lyrics_visible(false)}><Ionicons name="close-outline"  size={32} color={"white"}></Ionicons></TouchableOpacity>
                 
               </View>
               <View style={{width:"100%"}}>
-                <Text style={{fontFamily:"MontserratBold", color:"#4d1700", fontSize:13}}>Ovaj tekst nije sinhronizovan za pesmom, za sada.</Text>
+                <Text style={{fontFamily:"MontserratBold", color:"#4d1700", fontSize:13}}>Ovaj tekst nije sinhronizovan sa pesmom, za sada.</Text>
                 
               </View>
              
               
             </View>
 
-            <View style={{width:"100%",  flex:1}}>
-            
-              <LinearGradient colors={["#c55d31","transparent"]} 
-                style={{
-                position:"absolute",
-                zIndex: 100,
-                left: 0,
-                top:0,
-                right: 0,
-                height: 40,
-                // pointerEvents: "none"
-                }} />
-      
-              <ScrollView >
-                
-                <View style={{paddingLeft:25, paddingRight:25, width:"100%"}}>
-                  <Text style={{fontFamily:"MontserratBold", fontSize:25, color:"white"}}>
-                    {playingTrack?.lyrics} 
-                  </Text>
-                </View>
+            <View style={{width:"100%",  flex:1, display:"flex",gap:15, marginBottom:25}}>
+              <View style={{flex:1}}>
+                <LinearGradient colors={["#c55d31","transparent"]} 
+                  style={{
+                  position:"absolute",
+                  zIndex: 100,
+                  left: 0,
+                  top:0,
+                  right: 0,
+                  height: 70,
+                  // pointerEvents: "none"
+                  }} />
+        
+                <ScrollView >
+                  
+                  <View style={{paddingLeft:25, paddingRight:25, width:"100%"}}>
+                    <Text style={{fontFamily:"MontserratBold", fontSize:25, color:"white"}}>
+                      {playingTrack?.lyrics} 
+                    </Text>
+                  </View>
                 </ScrollView>
-            </View>
-          <LinearGradient colors={[ "transparent","#4a2607"]} 
+
+
+                <LinearGradient colors={[ "rgba(111,73,46,0)",
+                        "rgba(111,73,46,0.2)",
+                        "rgba(111,73,46,0.6)",
+                        "#6f492e"]} 
                         style={{
                         position:"absolute",
                         zIndex: 100,
                         left: 0,
                         bottom:0,
                         right: 0,
-                        height: 40,
+                        height: 70,
                         // pointerEvents: "none"
-                        }} />
+                        }} /> 
+
+              </View>
+
+                <View style={{display:"flex",justifyContent:"center",alignItems:"center", width:"100%",paddingLeft:25, paddingRight:25}}>
+                  <View style={{width:"100%"}}>
+                    <Slider
+                    style={{
+                      width: "100%",
+                      height: 20,
+                    }}
+                    minimumValue={0}
+                    maximumValue={duration}
+                    value={position}
+                    onSlidingComplete={AudioPro.seekTo}
+                    minimumTrackTintColor="#ff9f43"
+                    maximumTrackTintColor="gray"
+                    thumbTintColor="white"
+                    />
+                    <View style={{display:"flex", flexDirection:"row", justifyContent:"space-between"}}>
+                      <Text style={{fontFamily:"Montserrat", color:"white", fontSize:15}}>{to_seconds(position)}</Text>
+                      <Text style={{fontFamily:"Montserrat", color:"white", fontSize:15}}>{to_seconds(duration)}</Text>
+
+                    </View>
+                  </View>
+                  
+                  <LinearGradient 
+                  colors={["#FA9C6A", "#E2636F"]}
+                      
+                  style={{borderRadius:999, padding:20}}>
+                  <Animated.View style={{ opacity }}>
+                    <Ionicons name={AudioPro.getState()==AudioProState.PLAYING ? `pause`:"play"} color={"white"} size={30} onPress={()=> {
+                      
+                      toggleIcon()
+                      if (AudioPro.getState()==AudioProState.PLAYING)
+                        AudioPro.pause()
+                      else {
+                        AudioPro.resume()
+                      }
+                    }}></Ionicons>  
+                  </Animated.View>
+                  </LinearGradient>
+             
+                </View>
+            </View>
+          
           </LinearGradient>
       </Modal>
       <View style={{height:"40%", display:"flex", gap:40}}>
         <View style={{display:"flex", justifyContent:"space-between", alignItems:"center",  flexDirection:"row", marginTop:10}}>
          
           <TouchableOpacity onPress={()=> {router.back()}}><Ionicons name="chevron-back-outline" size={32} color={"white"} ></Ionicons></TouchableOpacity>
-          <TouchableOpacity onPress={()=>{}}><Ionicons name="options-outline"  size={32} color={"white"}></Ionicons></TouchableOpacity>
+          <TouchableOpacity onPress={()=> set_ls_visible(!list_of_songs_visible)}><Ionicons name="menu-outline"  size={32} color={"white"}></Ionicons></TouchableOpacity>
         </View>
         <View style={{display:"flex", alignItems:"center"}}>
           {/* <View style={{backgroundColor:"#442C33", display:"flex", alignItems:"center", borderRadius:10, paddingTop:7,paddingBottom:7}}> */}
@@ -363,8 +558,8 @@ export function player() {
           if (playingTrack?.lyrics)
             set_lyrics_visible(!lyrics_visible)
         }}>
-        <Ionicons name="chevron-up" color={"white"} size={32}></Ionicons>
-        <Text style={{fontFamily:"Montserrat", color:"white"}}>Lyrics</Text>
+        <Ionicons name="chevron-up" color={playingTrack?.lyrics ? "white":"gray"  } size={32}></Ionicons>
+        <Text style={{fontFamily:"Montserrat", color:playingTrack?.lyrics ? "white":"gray"  }}>Lyrics</Text>
         </TouchableOpacity>
       </View>
       
