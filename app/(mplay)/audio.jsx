@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
-import { router } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { Animated, FlatList, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
@@ -11,13 +11,13 @@ import { load_shuffled, play_by_index, play_next, play_previous, setTracks } fro
 
 
 
-async function get_data(funkcija) {
+async function get_data(funkcija, id) {
   try {
-    const response = await fetch("http://192.168.0.16:8000/nasumicniZapisi/",
+    const response = await fetch("http://192.168.0.14:8000/nasumicniZapisi/",
       {
       method:"POST",
       body: new URLSearchParams(
-        {brojSnimaka:10, idSnimka:1}
+        {brojSnimaka:10, idSnimka:id}
       ).toString(),
       headers:{"Content-Type":"application/x-www-form-urlencoded"}})
   
@@ -27,14 +27,14 @@ async function get_data(funkcija) {
   }
 
   const data = await response.json()
-  // data.artwork = "http://192.168.0.16:8000"+data.artwork
-  // data.url= "http://192.168.0.16:8000"+data.url
+  // data.artwork = "http://192.168.0.14:8000"+data.artwork
+  // data.url= "http://192.168.0.14:8000"+data.url
   // data.url = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
 
 
   data.forEach((data)=> {
-    data.artwork = "http://192.168.0.16:8000"+data.artwork
-    data.url= "http://192.168.0.16:8000"+data.url
+    data.artwork = "http://192.168.0.14:8000"+data.artwork
+    data.url= "http://192.168.0.14:8000"+data.url
   })
     // console.log(data)
 
@@ -59,11 +59,14 @@ function to_seconds(ms) {
 
 export function player() {
     
-    const { state, position, duration, playingTrack, playbackSpeed, volume, error } = useAudioPro();
+    const { state, position, duration, playingTrack, playbackSpeed, volume, error } = useAudioPro()
+    const {id} = useLocalSearchParams()
     let [vrednost, setVrednost] = useState(0)
     let [podaci, ucitaj_podatke] = useState([])
     let [lyrics_visible, set_lyrics_visible] = useState(false)
     let [list_of_songs_visible, set_ls_visible] = useState(false)
+
+
     // console.log(playingTrack)
     useEffect(()=> {
 
@@ -72,7 +75,7 @@ export function player() {
       contentType: AudioProContentType.MUSIC,
       debug: __DEV__,
     });
-      get_data(ucitaj_podatke)
+      get_data(ucitaj_podatke,id)
 
 
     },[])
