@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Tabs } from "expo-router";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet } from "react-native";
+import { Context } from "../UserContext";
 
 
 
@@ -10,7 +11,8 @@ export default function TabLayout() {
   return (
     
       
-      <View style={{flex:1}}>
+      // <View style={{flex:1}}>
+    <Context style={{flex:1}}>
     <Tabs screenOptions={{
       animation:"shift",
      tabBarShowLabel:false,
@@ -43,7 +45,7 @@ export default function TabLayout() {
 
 
     </Tabs>
-    </View>
+    </Context>
    
   );
 }

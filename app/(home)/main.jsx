@@ -1,10 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, FlatList, Modal, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-
 
 async function get_data(funkcija, page, search_params) {
   try {
@@ -56,12 +55,16 @@ export default function HomeScreen() {
   let [refresh_val, pokreni_refresh] = useState(false)
 
 
+  const {info_data} = useLocalSearchParams()
+
   function refresh() {
     pokreni_refresh(true)
     setTimeout(()=>
       pokreni_refresh(false)
     ,1000)
   }
+
+
 
 
 

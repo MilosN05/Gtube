@@ -3,13 +3,68 @@ import { Image, ImageBackground } from "expo-image";
 
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import { useState } from "react";
-import { Button, Modal, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Button, Modal, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+
+async function log_in(email, sifra, objekat_r) {
+    const response = await fetch("http://192.168.0.14:8000/logovanje/", {
+        method:"POST",
+        body: JSON.stringify({
+            Email:email,
+            Sifra: sifra
+        })
+
+        
+    })
+
+    if (!response.ok) {
+        objekat_r.error=1
+        return
+    }
+
+
+    const result = await response.json()
+
+    if (result==0)
+        objekat_r.error=2
+        return
+   
+
+    objekat_r.ime = result.Ime
+    objekat_r.profilna = result.Profilna
+    objekat_r.id = result.id
+}
+
+export async function request_data(result) {
+    let response = await fetch("http://192.168.0.14:8000/nalog/", 
+    {
+        method:"POST",
+        body: result
+    }
+    )
+
+    if (!response.ok) {
+        Alert.alert("Nešto nije kako treba, restartuje aplikaciju !")
+        return
+    }
+
+    if (response.error) {
+        Alert.alert(response.error)
+        return
+    }
+
+    return await response.json()
+}
 
 export default function signIn() {
     const [isChecked, setChecked] = useState(false);
     const [visible, setVisible] = useState(false);
+    const [email, set_email] = useState("")
+    const [sifra, set_sifra] = useState("")
+    
 
     return (
     
@@ -64,11 +119,22 @@ export default function signIn() {
                         <View style={{ height:"43%", display:"flex", justifyContent:"space-between"}}>
                         <View style={{}}>
                             <Text style={{fontFamily:"Montserrat", fontSize:16}}>Email Adresa</Text>
-                            <TextInput placeholder="nekoNesto123@gmail.com" style={{fontFamily:"MontserratBold", fontSize:15, paddingLeft:0}}></TextInput>
+                            <TextInput placeholder="nekoNesto123@gmail.com" style={{fontFamily:"MontserratBold", fontSize:15, paddingLeft:0}}
+                            onChangeText={(text)=> {
+                                set_email(text)
+                            }}  
+                            >
+
+                            </TextInput>
                             <View style={{ backgroundColor:"#EC786B",height:2, borderRadius:20}}></View>
                         </View>
                         <View>
-                            <TextInput placeholder="Šifra" style={{fontFamily:"MontserratBold", fontSize:15, paddingLeft:0}} secureTextEntry></TextInput>
+                            <TextInput placeholder="Šifra" style={{fontFamily:"MontserratBold", fontSize:15, paddingLeft:0}} secureTextEntry
+                            onChangeText={(text)=> {
+                                set_sifra(text)
+                            }}
+                            
+                            ></TextInput>
                             <View style={{ backgroundColor:"rgba(61, 65, 62, 0.13)",height:2, borderRadius:20}}></View>
                         </View>
                     </View>
@@ -84,7 +150,49 @@ export default function signIn() {
                         <View style={{display:"flex", justifyContent:"space-between", height:"30%"}}>
                             <View style={{backgroundColor:"#EC786B", height:"60", display:"flex", justifyContent:'center', alignItems:"center", borderRadius:10}}>
                                 
-                                <TouchableOpacity><Text style={{fontFamily:"MontserratBold", color:"white"}}>ULOGUJ SE</Text></TouchableOpacity>
+                                <TouchableOpacity onPress={async ()=> {
+                                    let answer = {
+                                        error:0,
+                                        ime:"",
+                                        profilna:"",
+                                        id:""
+                                    }
+                                    if (email && sifra)
+                                        await log_in(email,sifra,answer)
+                                    else {
+                                        Alert.alert("Polje za Email i Sifru ne smeju ostati prazna !") 
+                                        return
+                                        }
+
+                                    if (answer.error==1) {
+                                        Alert.alert("Nešto nije u redu, pokušajte ponovo !")
+                                        return
+                                    }
+                                    else if (answer.error==2) {
+                                        Alert.alert("Takav nalog ne postoji ili netačna šifra !")
+                                        return
+                                    }
+                                        
+                                        
+                                    
+                                    const info_nalog = JSON.stringify({Sifra: sifra, Email: email})
+                                    if (isChecked)
+                                        SecureStore.setItemAsync("info_nalog", info_nalog)
+
+                                    let response = await request_data(info_nalog)
+                                    router.push(
+                                        {
+                                            pathname:"main",
+                                            params: {
+                                                info_data: JSON.stringify(response)
+                                            }
+                                        }
+                                    )
+
+
+                                }}>
+                                    <Text style={{fontFamily:"MontserratBold", color:"white"}}>ULOGUJ SE</Text>
+                                </TouchableOpacity>
                             </View>
                             <View style={{flexDirection:"row", alignItems:"center", justifyContent:"center", display:"flex"}}>
                                 <Text style={{fontFamily:"Montserrat"}}>Nemate nalog?</Text>
