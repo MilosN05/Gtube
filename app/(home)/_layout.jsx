@@ -2,12 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Tabs } from "expo-router";
 import { StyleSheet } from "react-native";
-import { Context } from "../UserContext";
+import { Context } from "../user_context";
 
 
 
 export default function TabLayout() {
-
+  
+  
   return (
     
       

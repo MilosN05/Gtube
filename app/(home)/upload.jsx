@@ -3,22 +3,54 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
 import { Button, Modal, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
+import { useUser } from "../user_context";
+
+
+
 
 export default function uploadF() {
 
-  const [visible, setVisible] = useState(false);
-  const [link, setLink] = useState("");
-  const [dProgress, uProgress] = useState(0)
+  const [visible, set_visible] = useState(false);
+  const [link, set_link] = useState("");
+  const [d_progress, u_progress] = useState(0)
+  const [current_message, set_message] = useState("")
+  const [preuzimanje_u_toku, set_preuzimanje] = useState(false)
+  const {info_data,set_info_data, online_access} = useUser()
+
 
   const progressRef = useRef(null)
 
+  
+
   useEffect(() => {
-    progressRef.current?.animate(dProgress, 300)
-  }, [dProgress])
+    progressRef.current?.animate(d_progress, 300)
+  }, [d_progress])
   //Objasnjenje, useRef čuva vrednost (nonstop) od adrese prvog objekta i to u okviru progressRef.current, stoga
-  //Samo sazivamo .animate() nad jednim te istim objektom dodeljivajući mu dProgress vrednost
+  //Samo sazivamo .animate() nad jednim te istim objektom dodeljivajući mu d_progress vrednost
   //Drugi parametar od .animate() samo označava kojom brzinom će da izanimira pomeranje do odgovarajućeg procenta !
   return (
+
+     !online_access ? 
+      <View style={{flex: 1,display:"flex",alignItems:"center"}}>
+        <View style={{display:"flex",justifyContent:"center",alignItems:"center", gap:30, top:150}}>
+        <Image source={require("../../assets/images/connection2.png")} style={{width:150, height:150}}/>
+        <View style={{width:"70%", display:"flex",gap:20}}>
+          <Text style={{fontFamily:"Montserrat", color:"black", fontSize:23, textAlign:"center"}}>Ups, Nema Veze Sa Internetom</Text>
+          <Text style={{fontFamily:"Montserrat", color:"gray", fontSize:14, textAlign:"center",letterSpacing:1, lineHeight:20}}>Proverite da li je uključen WIFI ili mobilni podaci i onda pokušajte ponovo</Text>
+        </View>
+        {/* <TouchableOpacity onPress={()=> {
+          check_connection()
+        }} >
+          <View style={{backgroundColor:"#df2e2e", borderRadius:30, paddingTop:10, paddingBottom:10, paddingLeft:30, paddingRight:30}}> 
+            <Text style={{color:"white",fontFamily:"MontserratBold",  fontSize:18, textAlign:"center"}}>POKUŠAJ PONOVO</Text>
+          </View>
+        </TouchableOpacity> */}
+        </View>
+
+        
+
+      </View>
+        : 
     <LinearGradient
           colors={["#68493C", "#32202E", "#111425"]}
       locations={[0, 0.15, 1]}
@@ -42,7 +74,7 @@ export default function uploadF() {
                         ref={progressRef} //Ovde ref dodeljuje adresu objekta vezan za AnimatedCircularProgress !
                         size={120}
                         width={15}
-                        // key={dProgress}
+                        // key={d_progress}
                         fill={0}
                         tintColor="#00e0ff"
                         // onAnimationComplete={() => console.log('onAnimationComplete')}
@@ -52,38 +84,74 @@ export default function uploadF() {
                           <TextInput style={{color:"white",paddingLeft:20, paddingRight:20, fontFamily:"MontserratItalic", fontSize:15, zIndex:3}} 
                           placeholder="https://youtu.be/..." 
                           onChangeText={(text)=>
-                            setLink(text)
+                            set_link(text)
                           }
                           value={link}
                           placeholderTextColor={"#787996"}
-                          onSubmitEditing={(text)=>{
-                            let linkR = text.nativeEvent.text;
-                            if (linkR.startsWith("https://youtu.be")) {
+                          onSubmitEditing={async (text)=>{
 
-                              let socket = new  WebSocket("ws://192.168.0.14:8000/objavaSnimaka/")
+                            
+                            if (!online_access) {
+                                Alert.alert("Nema aktivne internet konekcije ili server nije dostupan !")
+                                return
+                            }
+
+                            let link_r = text.nativeEvent.text;
+                            if (link_r.startsWith("https://youtu.be")) {
+
+
+                              let messages_that_matter = ["Dodat tekst ...", "Uspešno dodata pesma u bazu !", "Neuspešno pronalaženje teksta ...", "Pronalaženje teksta pesme ...","Ne može taj link !", "Pesma već postoji u bazi !"]
+                              let socket = new  WebSocket("ws://192.168.0.22:8000/ws/objavaSnimaka/")
+
+                              set_preuzimanje(true)
+
                               socket.addEventListener("open", (event)=> {
-                                socket.send(JSON.stringify({link: linkR}))
+                                socket.send(JSON.stringify({link: link_r}))
                               })
-
+                              
                               socket.addEventListener("message", (event)=> {
-                               
-                                let message = JSON.parse(event.data).message
-                                console.log(event)
-                                if (message!="zavrseno") {
+                                // console.log(link)
+                                let received_response = JSON.parse(event.data)
+                                let message = received_response.message
+                                // console.log(event)
+                                // console.log(message)
+                                if (!messages_that_matter.includes(message)) {
                                   const percentage = parseFloat(message)
-                                  uProgress(percentage)
+                                  u_progress(percentage)
                                 }
-                                else console.log(message)
+                                else {
+                                  set_message(message)
+                                  if (received_response.response!=undefined) {
+                                    setTimeout(()=> {
+                                      set_preuzimanje(false) 
+                                      set_message("")
+                                    },2000)
+                                    
+
+
+                                  }
+
+
+                                }
+
                                 
                               })
                             
                             }
-                            setLink("")
+                            // console.log(d_progress)
+                            set_link("")
+                            // set_message("")
 
                           }}
                           ></TextInput>
                         </View>
-                        <Button title="Zatvori" onPress={() => setVisible(false)} />
+                        {!preuzimanje_u_toku ? 
+                        <Button title="Zatvori" onPress={() => set_visible(false)} />
+                        // <Text style={{fontFamily:"MontserratBold", color:"white", fontSize:17, textAlign:"center"}}>Pesma uspešno dodata u bazu !</Text>
+
+                        :
+                        <Text style={{fontFamily:"MontserratBold", color:"white", fontSize:17, textAlign:"center"}}>{current_message}</Text>
+                      }
                             </View>
                         </View>
                     </Modal>
@@ -94,7 +162,7 @@ export default function uploadF() {
         <View style={{height:"60%", width:"100%", display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <Image source={require("../../assets/images/musicAudio2.png")} style={{width:230, height:230}}></Image>
         <TouchableOpacity 
-        onPress={()=>setVisible(!visible)}
+        onPress={()=>set_visible(!visible)}
         style={{backgroundColor:"#3F4158", padding:20, width:"100%",display:"flex",justifyContent:"center",alignItems:"center", borderRadius:10}}>
           <Text style={{color:"#787996", fontFamily:"MontserratBold", fontSize:20}}>Unesi Link</Text></TouchableOpacity>
         </View>

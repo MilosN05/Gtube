@@ -1,14 +1,23 @@
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import NetInfo from "@react-native-community/netinfo";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { request_data } from "./signin";
 
 async function register(ime, email, telefon, datumr,sifra,objekat_r) {
-    const response = await fetch("http://192.168.0.14:8000/registracija/", {
+
+    let state = await NetInfo.fetch()
+
+    if (state.isInternetReachable==false) {
+        Alert.alert("Nema aktivne internet konekcije !")
+        return
+    }
+    try {
+    const response = await fetch("http://192.168.0.22:8000/registracija/", {
         method:"POST",
         body: JSON.stringify({
             Ime:ime,
@@ -31,8 +40,13 @@ async function register(ime, email, telefon, datumr,sifra,objekat_r) {
 
     const result = await response.json()
 
-    
-    objekat_r.error = result.error
+    if (result.error)
+        objekat_r.error = result.error
+    }
+
+    catch {
+        objekat_r.error="Server je offline !"
+    }
     
    
 
@@ -53,6 +67,11 @@ export default function signIn() {
     const [sifra, set_sifra] = useState("")
     const [pot_sifra,set_psifra] = useState("")
     const [show_picker, set_showp] = useState(false)
+    let fullfilled_cond = []
+
+    let fullfilled_cond_ref = useRef(fullfilled_cond).current
+
+    console.log(fullfilled_cond_ref)
 
     function change_date(event, selectedDate) {
         set_showp(false)
@@ -95,17 +114,21 @@ export default function signIn() {
                 <Text style={{fontFamily:"Montserrat", fontSize:16}}>Ime</Text>
                 <TextInput placeholder="Miroljub Petrovic" style={{fontFamily:"MontserratBold", fontSize:15, paddingLeft:0}}
                 
-                onChangeText={(object)=> {
-                    if (object.nativeEvent.text.length>11) {
+                onChangeText={(text)=> {
+                    if (text.length>11) {
                         Alert.alert("Dužina imena ne sme biti duže od 11 karaktera !")
-                        return
+                        fullfilled_cond_ref[0]=false
+                        
                     }
+                    else
+                        fullfilled_cond_ref[0]=true
 
-                    set_ime(object.nativeEvent.text)
+
+                    set_ime(text)
                 }}
                 >
                 </TextInput>
-                <View style={{ backgroundColor:"#EC786B",height:2, borderRadius:20}}></View>
+                <View style={{ backgroundColor: fullfilled_cond_ref[0]==false? "red": "#EC786B",height:2, borderRadius:20}}></View>
             </View>
 
             <View style={{}}>
@@ -114,13 +137,16 @@ export default function signIn() {
                 onEndEditing={(object)=> {
                     if (object.nativeEvent.text.length<=10|| object.nativeEvent.text.length>40 || !object.nativeEvent.text.includes("@gmail.com")) {
                         Alert.alert("Dužina email-a (trenutno prihvatamo samo Gmail) ne sme biti duže od 40 karaktera !")
-                        return
+                        fullfilled_cond_ref[1]=false
+                        
                     }
+                    else
+                        fullfilled_cond_ref[1]=true
 
                     set_email(object.nativeEvent.text)
                 }}
                 ></TextInput>
-                <View style={{ backgroundColor:"#EC786B",height:2, borderRadius:20}}></View>
+                <View style={{ backgroundColor:fullfilled_cond_ref[1]==false? "red": "#EC786B",height:2, borderRadius:20}}></View>
             </View>
 
             <View style={{}}>
@@ -129,13 +155,15 @@ export default function signIn() {
                 onEndEditing={(object)=> {
                     if (object.nativeEvent.text.length<12 || !object.nativeEvent.text.includes("381")) {
                         Alert.alert("Broj mora biti u Srbiji (+381) i ne sme imati manje (zajedno sa tim brojem) manje od 12 brojeva !")
-                        return
+                        fullfilled_cond_ref[2]=false
+                        
                     }
-
+                    else
+                        fullfilled_cond_ref[2]=true
                     set_telefon(object.nativeEvent.text)
                 }}
                 ></TextInput>
-                <View style={{ backgroundColor:"#EC786B",height:2, borderRadius:20}}></View>
+                <View style={{ backgroundColor:fullfilled_cond_ref[2]==false? "red": "#EC786B",height:2, borderRadius:20}}></View>
             </View>
 
             <View style={{}}>
@@ -143,6 +171,7 @@ export default function signIn() {
                 <TextInput placeholder="Datum rođenja" style={{fontFamily:"MontserratBold", fontSize:15, paddingLeft:0}}
                 value={`${datumr.getFullYear()}-${datumr.getDate()}-${datumr.getMonth()}`}
                 onPress={()=> {
+                    fullfilled_cond_ref[3]=true
                     set_showp(true)
                 }}
                 // onEndEditing={(object)=> {
@@ -167,34 +196,42 @@ export default function signIn() {
                      <DateTimePicker value={datumr} mode="date" display="default" onChange={change_date}> </DateTimePicker>
                 }
                
-                <View style={{ backgroundColor:"#EC786B",height:2, borderRadius:20}}></View>
+                <View style={{ backgroundColor:fullfilled_cond_ref[3]==false? "red": "#EC786B",height:2, borderRadius:20}}></View>
             </View>
 
             <View style={{}}>
                 <Text style={{fontFamily:"Montserrat", fontSize:16}}></Text>
                 <TextInput placeholder="Šifra" style={{fontFamily:"MontserratBold", fontSize:15, paddingLeft:0}} 
                 onEndEditing={(object)=> {
-                    if (object.nativeEvent.text<3) {
+                    fullfilled_cond_ref[5]=(object.nativeEvent.text==pot_sifra)
+
+                    if (object.nativeEvent.text.length<3) {
+                        
                         Alert.alert("Šifra ne sme biti kraća od tri karaktera !")
-                        return
+                        fullfilled_cond_ref[4]=false
                     }
+                    else 
+                        fullfilled_cond_ref[4]=true
 
                     set_sifra(object.nativeEvent.text)
 
 
                 }}
-                secureTextEntry></TextInput>
-                <View style={{ backgroundColor:"#EC786B",height:2, borderRadius:20}}></View>
+                secureTextEntry
+                
+                ></TextInput>
+                <View style={{ backgroundColor:fullfilled_cond_ref[4]==false? "red": "#EC786B",height:2, borderRadius:20}}></View>
             </View>
 
             <View style={{}}>
                 <Text style={{fontFamily:"Montserrat", fontSize:16}}></Text>
                 <TextInput placeholder="Potvrda Šifre" style={{fontFamily:"MontserratBold", fontSize:15, paddingLeft:0 }}
                 onChangeText={(text)=> {
+                    fullfilled_cond_ref[5]=(sifra==text)
                    set_psifra(text)
                 }}
                 secureTextEntry></TextInput>
-                <View style={{ backgroundColor:"#EC786B",height:2, borderRadius:20}}></View>
+                <View style={{ backgroundColor:fullfilled_cond_ref[5]==false? "red": "#EC786B",height:2, borderRadius:20}}></View>
             </View>
 
             <View style={{display:"flex", justifyContent:"space-evenly", flex:1}}>
@@ -202,11 +239,12 @@ export default function signIn() {
                                 
                                 <TouchableOpacity onPress={async ()=>
                                     {
+
+                                        if (fullfilled_cond_ref.every(n=>n==true)) {
                                         let answer = {
                                             error:0
                                         }
-
-                                        await register(ime, email, telefon, datumr, sifra, answer)
+                                        await register(ime, email, telefon, `${datumr.getFullYear()}-${datumr.getMonth()+1}-${datumr.getDate()}`, sifra, answer)
 
                                         if (answer.error==1) {
                                             Alert.alert("Nešto nije u redu, pokušajte ponovo !")
@@ -227,11 +265,18 @@ export default function signIn() {
                                             {
                                                 pathname:"main",
                                                 params: {
-                                                    info_data: JSON.stringify(response)
+                                                    info_data: JSON.stringify(response),
+                                                    is_connected:true,
+                                                    is_sactive:true
                                                 }
                                             }
                                         )
+                                        }
+
+                                        else
+                                            Alert.alert("Uslovi nisu ispunjeni !")
                                     }
+                                    
                                 }><Text style={{fontFamily:"MontserratBold", color:"white"}}>REGISTRUJ SE</Text></TouchableOpacity>
                             </View>
                             <View style={{flexDirection:"row", alignItems:"center", justifyContent:"center", display:"flex"}}>

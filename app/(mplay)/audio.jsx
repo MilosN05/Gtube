@@ -13,7 +13,7 @@ import { load_shuffled, play_by_index, play_next, play_previous, setTracks } fro
 
 async function get_data(funkcija, id) {
   try {
-    const response = await fetch("http://192.168.0.14:8000/nasumicniZapisi/",
+    const response = await fetch("http://192.168.0.22:8000/nasumicniZapisi/",
       {
       method:"POST",
       body: new URLSearchParams(
@@ -27,14 +27,14 @@ async function get_data(funkcija, id) {
   }
 
   const data = await response.json()
-  // data.artwork = "http://192.168.0.14:8000"+data.artwork
-  // data.url= "http://192.168.0.14:8000"+data.url
+  // data.artwork = "http://192.168.0.22:8000"+data.artwork
+  // data.url= "http://192.168.0.22:8000"+data.url
   // data.url = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
 
 
   data.forEach((data)=> {
-    data.artwork = "http://192.168.0.14:8000"+data.artwork
-    data.url= "http://192.168.0.14:8000"+data.url
+    data.artwork = "http://192.168.0.22:8000"+data.artwork
+    data.url= "http://192.168.0.22:8000"+data.url
   })
     // console.log(data)
 

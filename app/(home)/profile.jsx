@@ -5,16 +5,26 @@ import { router } from 'expo-router';
 import * as SecureStore from "expo-secure-store";
 import { useEffect, useState } from 'react';
 import { Alert, Text, TouchableOpacity, View } from 'react-native';
-import { useUser } from '../UserContext';
+import { useUser } from '../user_context';
 
 
 
 export default function profile() {
-
-  const {info_data, set_info_data} = useUser()
-  const parsed_data = JSON.parse(info_data)
-
   const [image, set_image] = useState(null)
+  const [refresh, set_refresh] = useState(false)
+  const {info_data,set_info_data, online_access} = useUser()
+
+  const parsed_data = JSON.parse(info_data)
+  console.log(`${parsed_data?.Sifra}    ${parsed_data}`)
+
+
+  // useEffect(()=> {
+  //   set_refresh(true)
+  //   set_refresh(false)
+
+  //   console.log(`33   ${is_connected} ${typeof(is_connected)}`)
+  // }, [is_connected])
+  
 
   useEffect(()=> {
     if (image)
@@ -36,6 +46,10 @@ export default function profile() {
   }
 
   async function upload_image() {
+
+    if (!online_access)
+      return;
+
     const form_data = new FormData()
     
       form_data.append("slika_file", {
@@ -47,7 +61,7 @@ export default function profile() {
       form_data.append("Email", parsed_data.Email)
       form_data.append("Ime", parsed_data.Ime)
 
-      let response = await fetch("http://192.168.0.14:8000/unosProfilne/", {
+      let response = await fetch("http://192.168.0.22:8000/unosProfilne/", {
         method:"POST",
         body:form_data,
         headers: {
@@ -73,6 +87,27 @@ export default function profile() {
   }
 
   return (
+    !online_access ? 
+      <View style={{flex: 1,display:"flex",alignItems:"center"}}>
+        <View style={{display:"flex",justifyContent:"center",alignItems:"center", gap:30, top:150}}>
+        <Image source={require("../../assets/images/connection3.png")} style={{width:150, height:150}}/>
+        <View style={{width:"70%", display:"flex",gap:20}}>
+          <Text style={{fontFamily:"Montserrat", color:"black", fontSize:23, textAlign:"center"}}>Ups, Nema Veze Sa Internetom</Text>
+          <Text style={{fontFamily:"Montserrat", color:"gray", fontSize:14, textAlign:"center",letterSpacing:1, lineHeight:20}}>Proverite da li je uključen WIFI ili mobilni podaci i onda pokušajte ponovo</Text>
+        </View>
+        {/* <TouchableOpacity onPress={()=> {
+          check_connection()
+        }}>
+          <View style={{backgroundColor:"#df2e2e", borderRadius:30, paddingTop:10, paddingBottom:10, paddingLeft:30, paddingRight:30}}> 
+            <Text style={{color:"white",fontFamily:"MontserratBold",  fontSize:18, textAlign:"center"}}>POKUŠAJ PONOVO</Text>
+          </View>
+        </TouchableOpacity> */}
+        </View>
+
+        
+
+      </View>
+        : 
     <View style={{width:"100%",height:"100%", backgroundColor:"#111425", padding:20, gap:30}}>
       {/* <View style={{borderBottomLeftRadius:230, borderBottomRightRadius:230, backgroundColor:"gray", height:"40%"}}></View>
       <View style={{height:"60%"}}></View> */}
@@ -89,7 +124,7 @@ export default function profile() {
 
       <View style={{display:"flex", justifyContent:"center", alignItems:"center"}}>
         <TouchableOpacity onPress={()=>choose_image()}>
-          <Image source={{uri:`http://192.168.0.14:8000/media/${parsed_data?.Profilna}`}} style={{width:130, height:130,color:"white", borderRadius:300}}/>
+          <Image source={ {uri:`http://192.168.0.22:8000/media/${parsed_data?.Profilna}`}} style={{width:130, height:130,color:"white", borderRadius:300}}/>
         </TouchableOpacity>
         
       </View>

@@ -1,6 +1,6 @@
+import NetInfo from "@react-native-community/netinfo";
 import Checkbox from "expo-checkbox";
 import { Image, ImageBackground } from "expo-image";
-
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
@@ -10,36 +10,44 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 
 async function log_in(email, sifra, objekat_r) {
-    const response = await fetch("http://192.168.0.14:8000/logovanje/", {
-        method:"POST",
-        body: JSON.stringify({
-            Email:email,
-            Sifra: sifra
-        })
 
-        
-    })
+    let state = await NetInfo.fetch()
 
-    if (!response.ok) {
-        objekat_r.error=1
+    if (state.isInternetReachable==false) {
+        Alert.alert("Nema aktivne internet konekcije !")
         return
     }
+    try {
+        const response = await fetch("http://192.168.0.22:8000/logovanje/", {
+            method:"POST",
+            body: JSON.stringify({
+                Email:email,
+                Sifra: sifra
+            })
+
+            
+        })
+
+        if (!response.ok) {
+            objekat_r.error=1
+            return
+        }
 
 
-    const result = await response.json()
+        const result = await response.json()
 
-    if (result==0)
-        objekat_r.error=2
-        return
-   
+        if (result==0)
+            objekat_r.error=2
+            return
+   }
+   catch {
+    objekat_r.error="Server je offline !"
+   }
 
-    objekat_r.ime = result.Ime
-    objekat_r.profilna = result.Profilna
-    objekat_r.id = result.id
 }
 
 export async function request_data(result) {
-    let response = await fetch("http://192.168.0.14:8000/nalog/", 
+    let response = await fetch("http://192.168.0.22:8000/nalog/", 
     {
         method:"POST",
         body: result
@@ -172,6 +180,10 @@ export default function signIn() {
                                         Alert.alert("Takav nalog ne postoji ili netačna šifra !")
                                         return
                                     }
+                                    else if (answer.error!=0) {
+                                        Alert.alert(answer.error)
+                                        return
+                                    }
                                         
                                         
                                     
@@ -180,11 +192,14 @@ export default function signIn() {
                                         SecureStore.setItemAsync("info_nalog", info_nalog)
 
                                     let response = await request_data(info_nalog)
+                                    // console.log(`Ucitani podaci o korisniku: ${response}`)
                                     router.push(
                                         {
                                             pathname:"main",
                                             params: {
-                                                info_data: JSON.stringify(response)
+                                                info_data: JSON.stringify(response),
+                                                is_connected: true,
+                                                is_sactive:true
                                             }
                                         }
                                     )

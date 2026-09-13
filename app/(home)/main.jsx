@@ -1,13 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, FlatList, Modal, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useUser } from '../user_context';
 
 async function get_data(funkcija, page, search_params) {
+
+    
   try {
-    const response = await fetch(`http://192.168.0.14:8000/${page}/`,
+    const response = await fetch(`http://192.168.0.22:8000/${page}/`,
       {
       method:"POST",
       body: new URLSearchParams(
@@ -21,14 +24,14 @@ async function get_data(funkcija, page, search_params) {
   }
 
   const data = await response.json()
-  // data.artwork = "http://192.168.0.14:8000"+data.artwork
-  // data.url= "http://192.168.0.14:8000"+data.url
+  // data.artwork = "http://192.168.0.22:8000"+data.artwork
+  // data.url= "http://192.168.0.22:8000"+data.url
   // data.url = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
 
 
   data.forEach((data)=> {
-    data.artwork = "http://192.168.0.14:8000"+data.artwork
-    data.url= "http://192.168.0.14:8000"+data.url
+    data.artwork = "http://192.168.0.22:8000"+data.artwork
+    data.url= "http://192.168.0.22:8000"+data.url
   })
     // console.log(data)
 
@@ -53,10 +56,11 @@ export default function HomeScreen() {
   let [results, set_results] = useState([])
   let [loading, set_loading] = useState(false)
   let [refresh_val, pokreni_refresh] = useState(false)
+  // let [no_connection, check_connection] = useState(true)
 
 
-  const {info_data} = useLocalSearchParams()
-
+  const {info_data,online_access} = useUser()
+  // console.log(`POVEZANO: ${is_connected}     tt: ${is_connected==false}   tip: ${typeof(is_connected)} `)
   function refresh() {
     pokreni_refresh(true)
     setTimeout(()=>
@@ -156,10 +160,30 @@ export default function HomeScreen() {
         get_data(ucitaj_podatke_trending,"nasumicniZapisi",{brojSnimaka:7, idSnimka:-1})
         get_data(ucitaj_podatke_skorasnji_unosi,"skorasnjiUnosi",{brojSnimaka:7, idSnimka:-1})
 
-      },[])
+      },[online_access])
   return (
     
-      
+      !online_access ? 
+      <View style={{flex: 1,display:"flex",alignItems:"center"}}>
+        <View style={{display:"flex",justifyContent:"center",alignItems:"center", gap:30, top:100}}>
+        <Image source={require("../../assets/images/connection.png")} style={{width:300, height:300}}/>
+        <View style={{width:"70%", display:"flex",gap:20}}>
+          <Text style={{fontFamily:"Montserrat", color:"black", fontSize:23, textAlign:"center"}}>Ups, Nema Veze Sa Internetom</Text>
+          <Text style={{fontFamily:"Montserrat", color:"gray", fontSize:14, textAlign:"center",letterSpacing:1, lineHeight:20}}>Proverite da li je uključen WIFI ili mobilni podaci i onda pokušajte ponovo</Text>
+        </View>
+      {/* <TouchableOpacity onPress={()=> {
+        check_connection()
+      }}>
+          <View style={{backgroundColor:"#df2e2e", borderRadius:30, paddingTop:10, paddingBottom:10, paddingLeft:30, paddingRight:30}}> 
+            <Text style={{color:"white",fontFamily:"MontserratBold",  fontSize:18, textAlign:"center"}}>POKUŠAJ PONOVO</Text>
+          </View>
+        </TouchableOpacity> */}
+        </View>
+
+        
+
+      </View>
+        : 
       <View style={{flex: 1,backgroundColor:"#111425"}}>
         <Modal visible={pretrazivanje} animationType="slide">
                 <LinearGradient
