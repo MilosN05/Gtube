@@ -40,6 +40,14 @@
           }
         }
       ],
+      [
+        "expo-file-system",
+        {
+          "supportsOpeningDocumentsInPlace": true,
+          "enableFileSharing": true
+        }
+      ]
+      ,
       "expo-font",
       "expo-web-browser",
       "expo-secure-store",

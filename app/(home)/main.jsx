@@ -1,10 +1,76 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Directory, File, Paths } from "expo-file-system";
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, FlatList, Modal, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, FlatList, Modal, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { outer_store } from '../../store/store';
 import { useUser } from '../user_context';
+
+
+
+
+
+
+
+async function download_save(url_audio,url_thumbnail, name_of_song) {
+
+
+  const destination_audio = new Directory(Paths.document, "songs")
+  const destination_thumbnail = new Directory(Paths.document, "thumbnails")
+  
+  if (!destination_audio.exists)
+    destination_audio.create()
+  if (!destination_thumbnail.exists)
+    destination_thumbnail.create()
+  console.log(`PREUZIMANJE: ${url_audio} | ${url_thumbnail} `)
+  try {
+    let audio = new File(Paths.document, "songs",name_of_song + ".mp3")
+    let thumbnail = new File(Paths.document, "thumbnails",name_of_song + ".png")
+    console.log(`audio: ${audio.exists} | thumbnail: ${thumbnail.exists}`)
+    
+    // const output_audio = await File.downloadFileAsync( url_audio,destination_audio)
+    // const output_thumbnail = await File.downloadFileAsync(url_thumbnail,destination_thumbnail)
+
+  }
+
+  catch (error) {
+    console.error(error)
+    Alert.alert(error)
+  }
+
+
+
+  // ///preuzimanje audio_zapisa
+  // const response = await fetch(url_audio)
+  // const edited_path = new Directory(Paths.document, "songs")
+
+  // if (!response.ok) {
+  //   Alert.alert("Nešto nije u redu, pokušajte ponovo !")
+  //   return
+  // }
+  // //Proveri za path
+  // const src = new File(edited_path, name_of_song + ".mp3")
+  // src.write(await response.bytes())
+
+
+
+
+  // ///preuzimanje thumbnail-a
+  // const response2 = await fetch(url_thumbnail)
+  // const edited_path2 = new Directory(Paths.document, "songs")
+
+  // if (!response2.ok) {
+  //   Alert.alert("Nešto nije u redu, pokušajte ponovo !")
+  //   return
+  // }
+  // //Proveri za path
+  // const src2 = new File(edited_path2, name_of_song + ".png")
+  // src2.write(await response.bytes())
+
+
+}
 
 async function get_data(funkcija, page, search_params) {
 
@@ -56,11 +122,26 @@ export default function HomeScreen() {
   let [results, set_results] = useState([])
   let [loading, set_loading] = useState(false)
   let [refresh_val, pokreni_refresh] = useState(false)
-  // let [no_connection, check_connection] = useState(true)
+  
+  
+
+  let loaded_zustand_sid = outer_store((state)=> state.set_info_data_zus)
+  let loaded_bookmark = outer_store((state)=> state.Bookmark)
+  let loaded_ime = outer_store((state)=> state.Ime)
 
 
-  const {info_data,online_access} = useUser()
-  // console.log(`POVEZANO: ${is_connected}     tt: ${is_connected==false}   tip: ${typeof(is_connected)} `)
+  const {info_data,online_access, set_info_data} = useUser()
+  const parsed_data = JSON.parse(info_data)
+
+  // console.log(loaded_ime)
+
+  // console.log(parsed_data)
+
+  // console.log(loaded_bookmark[30])
+
+
+  let liked_songs = useRef({}).current
+
   function refresh() {
     pokreni_refresh(true)
     setTimeout(()=>
@@ -68,6 +149,17 @@ export default function HomeScreen() {
     ,1000)
   }
 
+
+  // useEffect(()=> {
+  //   if (parsed_data)
+  //     for (let i=0;i<parsed_data.Bookmark.length;i++) {
+  //       liked_songs[parsed_data.Bookmark[i]] = true
+  //     }
+  // }, [])
+
+  // console.log(Paths.cache)
+  // console.log(Paths.document)
+  // console.log(new Directory(Paths.document, "test.mp3"))
 
 
 
@@ -458,16 +550,86 @@ export default function HomeScreen() {
               <Image source={{uri:item.artwork}} style={{width:"auto",height:"50", borderRadius:10}}/>
             </View>
           </TouchableOpacity>
-            <View style={{display:"flex", flexDirection:"row", justifyContent:"space-between", alignItems:"center", flex:1}}>
+            <View style={{display:"flex", flexDirection:"row", justifyContent:"space-between", alignItems:"center", flex:1, gap:10}}>
               <View style={{paddingLeft:20,flex:1}}>
                 <Text style={{color:"white", fontFamily:"MontserratBold"}} ellipsizeMode="tail" numberOfLines={1}>{item.title}</Text>
                 <Text style={{color:"gray", fontFamily:"Montserrat"}}  ellipsizeMode="tail" numberOfLines={1}>{item.artist}</Text>
               </View>
               <View style={{display:"flex", flexDirection:"row", paddingRight:10}}>
-              <TouchableOpacity>
-              <Ionicons name="heart-outline" size={32} color={"white"}></Ionicons></TouchableOpacity>
+              <TouchableOpacity onPress={async ()=> {
+                let id_azapisa = eval(item.id)
+                // console.log(id_azapisa)
+                let response = await fetch(`http://192.168.0.22:8000/bookmark/${parsed_data?.Ime}`, {
+                  method:"POST",
+                  body:
+                  new URLSearchParams({
+                    idSnimka: id_azapisa
+                  },
+                ).toString(),
+                headers: {
+                  "Content-type": "application/x-www-form-urlencoded"
+                }
+                })
 
-              <TouchableOpacity><Ionicons name="ellipsis-vertical-outline" size={32} color={"white"}></Ionicons></TouchableOpacity>
+                if (!response.ok) {
+                  Alert.alert("Nešto nije u redu sa lajkovanjem pesme !")
+                  return
+
+                }
+                
+                let response_text = await response.text()
+                // console.log(`CUVANJE: ${response_text}`)
+
+                // set_like(true)
+                // setTimeout(()=> {
+                //   set_like(false)
+                // }, 100)           //iz nekog nepoznatog razloga je moralo da se ovo doda tj setTimeout jer valjda zbog prebrzog menjanja vrednosti state-ova react native nije mogao to da povata kod komponenti
+                                  //drugog objašnjenja nemam, iako je on primećivao promene, nije hteo da ih primeti u okviru komponenti, nemam komentar
+                // set_like(false)
+
+
+
+                if (response_text==1) {
+                  loaded_bookmark[id_azapisa]={artist:item.artist, artwork: item.artwork.replace("http://192.168.0.22:8000",""), id:item.id, "lyrics":item.lyrics, "title":item.title, url: item.url.replace("http://192.168.0.22:8000", "")}
+                  
+                  // await download_save(item.url,item.artwork,item.title)
+
+
+                  // const file = new File(Paths.document, "songs", item.title)
+
+                  // if (file.exists)
+                  //   Alert.alert("Uspešno preuzeta pesma.")
+                  // else
+                  //   Alert.alert(`Nije se preuzela pesma: ${item.title}`)
+
+                }
+                else if (response_text==-1) { 
+                  // parsed_data.Bookmark[id_azapisa]=false
+                  delete loaded_bookmark[id_azapisa]
+
+                  
+                  
+                  // const file_audio = new File(Paths.document, "songs", item.title + ".mp3")
+                  // const file_thumbnail = new File(Paths.document, "thumbnails", item.title + ".png")
+
+                  // if (file_audio.exists)
+                  //   file_audio.delete()
+
+                  // if (file_thumbnail.exists)
+                  //   file_thumbnail.delete()
+                }
+                  // console.log(parsed_data)
+                  loaded_zustand_sid({...loaded_bookmark})
+
+
+
+                
+
+                // console.log(id_azapisa)
+              }}>
+              <Ionicons name={loaded_bookmark?.[item.id] ? "heart": "heart-outline"}   size={32} color={loaded_bookmark?.[item.id] ? "red": "white"}></Ionicons></TouchableOpacity>
+              {/* {console.log(liked_songs[item.id])} */}
+              {/* <TouchableOpacity><Ionicons name="ellipsis-vertical-outline" size={32} color={"white"}></Ionicons></TouchableOpacity> */}
               </View>
 
             </View>

@@ -3,11 +3,12 @@ import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
-import { Animated, FlatList, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Alert, Animated, FlatList, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 import Slider from '@react-native-community/slider'
 import { AudioPro, AudioProContentType, AudioProState, useAudioPro } from 'react-native-audio-pro'
 import { load_shuffled, play_by_index, play_next, play_previous, setTracks } from '../../setupAudio'
+import { outer_store } from '../../store/store'
 
 
 
@@ -66,6 +67,11 @@ export function player() {
     let [lyrics_visible, set_lyrics_visible] = useState(false)
     let [list_of_songs_visible, set_ls_visible] = useState(false)
 
+
+    let loaded_zustand_sid = outer_store((state)=> state.set_info_data_zus)
+    let loaded_bookmark = outer_store((state)=> state.Bookmark)
+    let loaded_ime = outer_store((state)=> state.Ime)
+    // console.log(useUser())
 
     // console.log(playingTrack)
     useEffect(()=> {
@@ -457,7 +463,84 @@ export function player() {
         
         <View style={{ paddingTop:50}}>
           <View style={{flexDirection:"row", display:"flex", justifyContent:"space-between"}}>
-            <TouchableOpacity onPress={()=>{}}><Ionicons name="heart-outline"size={30} color={"white"}></Ionicons></TouchableOpacity>
+            <TouchableOpacity onPress={async ()=> {
+                            let id_azapisa = eval(playingTrack.id)
+                            // console.log(`${id_azapisa} | ${loaded_ime}`)
+                            let response = await fetch(`http://192.168.0.22:8000/bookmark/${loaded_ime}`, {
+                              method:"POST",
+                              body:
+                              new URLSearchParams({
+                                idSnimka: playingTrack.id
+                              },
+                            ).toString(),
+                            headers: {
+                              "Content-type": "application/x-www-form-urlencoded"
+                            }
+                            })
+            
+                            if (!response.ok) {
+                              Alert.alert("Nešto nije u redu sa lajkovanjem pesme !")
+                              return
+            
+                            }
+                            
+                            let response_text = await response.text()
+                            // console.log(`CUVANJE: ${response_text}`)
+            
+                            // set_like(true)
+                            // setTimeout(()=> {
+                            //   set_like(false)
+                            // }, 100)           //iz nekog nepoznatog razloga je moralo da se ovo doda tj setTimeout jer valjda zbog prebrzog menjanja vrednosti state-ova react native nije mogao to da povata kod komponenti
+                                              //drugog objašnjenja nemam, iako je on primećivao promene, nije hteo da ih primeti u okviru komponenti, nemam komentar
+                            // set_like(false)
+            
+            
+            
+                            if (response_text==1) {
+                              loaded_bookmark[playingTrack.id]={artist:playingTrack.artist, artwork: playingTrack.artwork.replace("http://192.168.0.22:8000",""), id:playingTrack.id, "lyrics":playingTrack.lyrics, "title":playingTrack.title, url: playingTrack.url.replace("http://192.168.0.22:8000", "")}
+                              
+                              // await download_save(item.url,item.artwork,item.title)
+            
+            
+                              // const file = new File(Paths.document, "songs", item.title)
+            
+                              // if (file.exists)
+                              //   Alert.alert("Uspešno preuzeta pesma.")
+                              // else
+                              //   Alert.alert(`Nije se preuzela pesma: ${item.title}`)
+            
+                            }
+                            else if (response_text==-1) { 
+                              // parsed_data.Bookmark[id_azapisa]=false
+                              delete loaded_bookmark[playingTrack.id]
+            
+                              
+                              
+                              // const file_audio = new File(Paths.document, "songs", item.title + ".mp3")
+                              // const file_thumbnail = new File(Paths.document, "thumbnails", item.title + ".png")
+            
+                              // if (file_audio.exists)
+                              //   file_audio.delete()
+            
+                              // if (file_thumbnail.exists)
+                              //   file_thumbnail.delete()
+                            }
+                              // console.log(parsed_data)
+                              loaded_zustand_sid({...loaded_bookmark})
+            
+            
+            
+                            
+            
+                            // console.log(id_azapisa)
+                          }}>
+                            {/* <Ionicons name="heart-outline"size={30} color={"white"}></Ionicons> */}
+                            {/* {console.log(playingTrack.id)} */}
+                            {/* {console.log(loaded_bookmark)} */}
+                            {/* {console.log(loaded_bookmark[playingTrack.id])} */}
+                            <Ionicons name={playingTrack?.id && loaded_bookmark[playingTrack.id] ? "heart": "heart-outline"}   size={32} color={playingTrack?.id && loaded_bookmark[playingTrack.id] ? "red": "white"}></Ionicons>
+
+                          </TouchableOpacity>
             <TouchableOpacity onPress={()=>{
               let ispunjen_uslov = AudioPro.getVolume()==1
               if (ispunjen_uslov) {
@@ -568,7 +651,6 @@ export function player() {
       
       </View>
       </LinearGradient>
-      
 
     )
   

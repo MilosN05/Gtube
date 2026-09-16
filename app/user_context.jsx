@@ -2,9 +2,12 @@ import NetInfo from "@react-native-community/netinfo"
 import { useLocalSearchParams } from 'expo-router'
 import { createContext, useContext, useEffect, useState } from 'react'
 import { View } from 'react-native'
+import { outer_store } from "../store/store"
 
 
 const UserContext = createContext()
+
+
 
 
 
@@ -16,7 +19,38 @@ export function Context({children, style}) {
     const [online_access, set_online_ac] = useState(false)
     
     const params = useLocalSearchParams()
+    // console.log(params)
 
+
+  async function get_data(result) {
+    let response = await fetch("http://94.189.212.58:8000/nalog/", 
+    {
+        method:"POST",
+        body: result
+    }
+    )
+
+
+
+    if (!response.ok) {
+        Alert.alert("Nešto nije kako treba, restartuje aplikaciju !")
+        return
+    }
+
+    if (response.error) {
+        Alert.alert(response.error)
+        return
+    }
+    let loaded_zustand_sid = outer_store.getState().set_info_data_zus
+    let loaded_zustand_sime = outer_store.getState().set_ime_zus
+
+    let received_json = await response.json()
+    
+    loaded_zustand_sime(received_json.Ime)
+    loaded_zustand_sid(received_json.Bookmark)
+
+    set_info_data(JSON.stringify(received_json))
+  }
 
   //funkcija koja proverava da li je uspostavljena veza sa internetom, ne koristimo je trenutno
   async function check_connection() {
@@ -62,7 +96,7 @@ export function Context({children, style}) {
             signal: controller.signal
           })
 
-
+        
           set_isactive(true)
         }
         catch {
@@ -70,7 +104,6 @@ export function Context({children, style}) {
         }
 
       },30000)
-
 
       //incijalizacija provere povezanosti sa internet-om
       const remove_listener = NetInfo.addEventListener((state)=> {
@@ -86,11 +119,16 @@ export function Context({children, style}) {
       return ()=> {remove_listener();clearInterval(interval)}
     }, [])
 
-
+    console.log(`S:${is_sactive} IC:${is_connected  }`)
     useEffect(() =>{
 
       ///Ideja je da je moguće imati online pristup AKO I SAMO AKO JE SERVER DOSTUPAN I KLIJENT IMA VEZU SA INTERNETOM !
       set_online_ac(is_connected && is_sactive)
+
+      if (is_connected && is_sactive)
+        get_data(params.info_data)
+
+      // console.log(`ONLINE: ${online_access}`)
     }, [is_sactive, is_connected])
     return (
       <UserContext value={{info_data, set_info_data, online_access}}>

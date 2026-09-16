@@ -3,6 +3,10 @@ import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { Alert, Image, View } from "react-native";
 import { setupAudio } from "../../setupAudio";
+import { outer_store } from "../../store/store";
+
+
+
 
 async function is_logged() {
     let result = await SecureStore.getItemAsync("info_nalog")
@@ -12,8 +16,8 @@ async function is_logged() {
     else {
         let state = await NetInfo.fetch()
 
-        console.log(`TEST: ${state.isInternetReachable}`)
-        console.log(`TEST 2: ${state.isConnected}`)   
+        // console.log(`TEST: ${state.isInternetReachable}`)
+        // console.log(`TEST 2: ${state.isConnected}`)   
 
 
         if (state.isInternetReachable==false) {
@@ -38,21 +42,29 @@ async function is_logged() {
         
         
 
-        if (!response.ok) {
-            Alert.alert("Nešto nije kako treba, restartuje aplikaciju !")
-            return
-        }
+            if (!response.ok) {
+                Alert.alert("Nešto nije kako treba, restartuje aplikaciju !")
+                return
+            }
 
-        if (response.error) {
-            Alert.alert(response.error)
-            return
-        }
+            if (response.error) {
+                Alert.alert(response.error)
+                return
+            }
+        
+        
+        let loaded_zustand_sid = outer_store.getState().set_info_data_zus
+        let loaded_zustand_sime = outer_store.getState().set_ime_zus
 
-        // console.log(await response.json())
+        let received_json = await response.json()
+        
+        loaded_zustand_sime(received_json.Ime)
+        loaded_zustand_sid(received_json.Bookmark)
+            
         router.push({
             pathname: "main",
             params: {
-                info_data: JSON.stringify(await response.json()),
+                info_data: JSON.stringify(received_json),
                 is_connected: true,
                 is_sactive:true
                 
@@ -60,13 +72,17 @@ async function is_logged() {
         })
 
         }
+
         //Ukoliko server ne funkcioniše !
-        catch {
+        catch (error){
+            // console.log(`TESTTTEST: ${state.isInternetReachable}`)
+
+            console.log(`ERROR: ${error}`)
             router.push({
             pathname: "main",
             params: {
                 info_data: result,
-                is_connected:false,
+                is_connected:state.isInternetReachable,
                 is_sactive:false 
             }
         })
