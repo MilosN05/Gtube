@@ -1,192 +1,302 @@
-import { Ionicons } from '@expo/vector-icons'
-import { Image } from 'expo-image'
-import { LinearGradient } from 'expo-linear-gradient'
-import { router, useLocalSearchParams } from 'expo-router'
-import { useEffect, useRef, useState } from 'react'
-import { Alert, Animated, FlatList, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  Animated,
+  FlatList,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-import Slider from '@react-native-community/slider'
-import { AudioPro, AudioProContentType, AudioProState, useAudioPro } from 'react-native-audio-pro'
-import { load_shuffled, play_by_index, play_next, play_previous, setTracks } from '../../setupAudio'
-import { outer_store } from '../../store/store'
+import Slider from "@react-native-community/slider";
+import {
+  AudioPro,
+  AudioProContentType,
+  AudioProState,
+  useAudioPro,
+} from "react-native-audio-pro";
+import {
+  load_shuffled,
+  play_by_index,
+  play_next,
+  play_previous,
+  setTracks,
+} from "../../setupAudio";
+import { outer_store } from "../../store/store";
 
+async function download_save(url_audio, url_thumbnail, name_of_song) {
+  const destination_audio = new Directory(Paths.document, "songs");
+  const destination_thumbnail = new Directory(Paths.document, "thumbnails");
 
+  if (!destination_audio.exists) destination_audio.create();
+  if (!destination_thumbnail.exists) destination_thumbnail.create();
+  console.log(`PREUZIMANJE: ${url_audio} | ${url_thumbnail} `);
+  try {
+    let audio = new File(Paths.document, "songs", name_of_song + ".mp3");
+    let thumbnail = new File(
+      Paths.document,
+      "thumbnails",
+      name_of_song + ".png",
+    );
+    // console.log(`audio: ${audio.exists} | thumbnail: ${thumbnail.exists}`)
+
+    if (!audio.exists)
+      await File.downloadFileAsync(url_audio, destination_audio);
+    if (!thumbnail.exists)
+      await File.downloadFileAsync(url_thumbnail, destination_thumbnail);
+  } catch (error) {
+    console.error(error);
+    Alert.alert(error);
+  }
+}
 
 async function get_data(funkcija, id) {
   try {
-    const response = await fetch("http://192.168.0.22:8000/nasumicniZapisi/",
-      {
-      method:"POST",
-      body: new URLSearchParams(
-        {brojSnimaka:10, idSnimka:id}
-      ).toString(),
-      headers:{"Content-Type":"application/x-www-form-urlencoded"}})
-  
+    const response = await fetch("http://192.168.0.22:8000/nasumicniZapisi/", {
+      method: "POST",
+      body: new URLSearchParams({ brojSnimaka: 10, idSnimka: id }).toString(),
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    });
+
     // console.log(response)
-  if (!response.ok) {
-    throw new Error(`HTTP greska ! Status: ${response.status}`)
-  }
+    if (!response.ok) {
+      throw new Error(`HTTP greska ! Status: ${response.status}`);
+    }
 
-  const data = await response.json()
-  // data.artwork = "http://192.168.0.22:8000"+data.artwork
-  // data.url= "http://192.168.0.22:8000"+data.url
-  // data.url = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+    const data = await response.json();
+    // data.artwork = "http://192.168.0.22:8000"+data.artwork
+    // data.url= "http://192.168.0.22:8000"+data.url
+    // data.url = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
 
-
-  data.forEach((data)=> {
-    data.artwork = "http://192.168.0.22:8000"+data.artwork
-    data.url= "http://192.168.0.22:8000"+data.url
-  })
+    data.forEach((data) => {
+      data.artwork = "http://192.168.0.22:8000" + data.artwork;
+      data.url = "http://192.168.0.22:8000" + data.url;
+    });
     // console.log(data)
 
-  funkcija(data)
+    funkcija(data);
 
-  setTracks(data)
+    setTracks(data);
 
-  
-  // AudioPro.pause()
-  }
-
-  catch (error) {
-    console.log("Fetch neuspesan !: ",error)
+    // AudioPro.pause()
+  } catch (error) {
+    console.log("Fetch neuspesan !: ", error);
   }
 }
 
 function to_seconds(ms) {
-  let sekunde=Math.trunc(Math.trunc(ms%60000) / 1000)
-  let minute = Math.trunc(ms/60000)
-  return sekunde>=10 ? `${minute}:${sekunde}`:`${minute}:0${sekunde}`
+  let sekunde = Math.trunc(Math.trunc(ms % 60000) / 1000);
+  let minute = Math.trunc(ms / 60000);
+  return sekunde >= 10 ? `${minute}:${sekunde}` : `${minute}:0${sekunde}`;
 }
 
 export function player() {
-    
-    const { state, position, duration, playingTrack, playbackSpeed, volume, error } = useAudioPro()
-    const {id} = useLocalSearchParams()
-    let [vrednost, setVrednost] = useState(0)
-    let [podaci, ucitaj_podatke] = useState([])
-    let [lyrics_visible, set_lyrics_visible] = useState(false)
-    let [list_of_songs_visible, set_ls_visible] = useState(false)
+  const {
+    state,
+    position,
+    duration,
+    playingTrack,
+    playbackSpeed,
+    volume,
+    error,
+  } = useAudioPro();
+  const { id } = useLocalSearchParams();
+  let [vrednost, setVrednost] = useState(0);
+  let [podaci, ucitaj_podatke] = useState([]);
+  let [lyrics_visible, set_lyrics_visible] = useState(false);
+  let [list_of_songs_visible, set_ls_visible] = useState(false);
 
+  let loaded_zustand_sid = outer_store((state) => state.set_info_data_zus);
+  let loaded_bookmark = outer_store((state) => state.Bookmark);
+  let loaded_ime = outer_store((state) => state.Ime);
+  // console.log(useUser())
 
-    let loaded_zustand_sid = outer_store((state)=> state.set_info_data_zus)
-    let loaded_bookmark = outer_store((state)=> state.Bookmark)
-    let loaded_ime = outer_store((state)=> state.Ime)
-    // console.log(useUser())
-
-    // console.log(playingTrack)
-    useEffect(()=> {
-
-      
-      AudioPro.configure({
+  // console.log(playingTrack)
+  useEffect(() => {
+    AudioPro.configure({
       contentType: AudioProContentType.MUSIC,
       debug: __DEV__,
     });
-      get_data(ucitaj_podatke,id)
+    get_data(ucitaj_podatke, id);
+  }, []);
 
+  useEffect(() => {
+    if (podaci[0] && playingTrack && podaci[0].id != playingTrack.id)
+      AudioPro.play(podaci[0]);
+    else if (!playingTrack && podaci[0]) AudioPro.play(podaci[0]);
+  }, [podaci]);
 
-    },[])
-
-    useEffect(()=> {
-      if (podaci[0] && playingTrack && podaci[0].id!=playingTrack.id)
-        AudioPro.play(podaci[0])
-
-      else if (!playingTrack && podaci[0]) 
-        AudioPro.play(podaci[0])
-    },[podaci])
-
-    useEffect(()=> {
-      if (playingTrack) {
-        set_lyrics_visible(false)
-        switch_song()
-        }
-    }, [playingTrack]) 
-
-    
-
-
-    const opacity = useRef(new Animated.Value(1)).current;
-    
-    const toggleIcon = () => {
-      Animated.sequence([
-        Animated.timing(opacity, {
-          toValue: 0,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    };
-
-
-
-
-    const opacity2 = useRef(new Animated.Value(1)).current;
-    async function switch_song() {
-        Animated.timing(opacity2, {
-            toValue: 0,
-            duration: 150,
-            useNativeDriver: true,
-        }).start(() => {
-            // setCurrentSong(newSong);
-
-            Animated.timing(opacity2, {
-                toValue: 1, 
-                duration: 150,
-                useNativeDriver: true,
-            }).start();
-        });
+  useEffect(() => {
+    if (playingTrack) {
+      set_lyrics_visible(false);
+      switch_song();
     }
+  }, [playingTrack]);
 
-    return (
-      
-       <LinearGradient
+  const opacity = useRef(new Animated.Value(1)).current;
+
+  const toggleIcon = () => {
+    Animated.sequence([
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const opacity2 = useRef(new Animated.Value(1)).current;
+  async function switch_song() {
+    Animated.timing(opacity2, {
+      toValue: 0,
+      duration: 150,
+      useNativeDriver: true,
+    }).start(() => {
+      // setCurrentSong(newSong);
+
+      Animated.timing(opacity2, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }).start();
+    });
+  }
+
+  return (
+    <LinearGradient
       colors={["#68493C", "#32202E", "#111425"]}
       locations={[0, 0.15, 1]}
       start={{ x: 0.5, y: 0 }}
       end={{ x: 0.5, y: 1 }}
-      style={{ flex: 1, padding:25, display:"flex"}}
-
-      >
-
+      style={{ flex: 1, padding: 25, display: "flex" }}
+    >
       <Modal visible={list_of_songs_visible} animationType="slide">
         <LinearGradient
-          
-          colors={["#d26b3f","#864b31","#744b2b","#64431b"]}
-
+          colors={["#d26b3f", "#864b31", "#744b2b", "#64431b"]}
           // colors={["#68493C", "#32202E", "#111425"]}
-          locations={[0,0.6, 0.8,0.9]}
+          locations={[0, 0.6, 0.8, 0.9]}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
-          style={{flex:1,display:"flex", alignItems:"center",gap:20}}>
+          style={{ flex: 1, display: "flex", alignItems: "center", gap: 20 }}
+        >
+          <View
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "flex-end",
+              width: "100%",
+              borderBottomColor: "#c45627",
+              borderBottomWidth: 1.5,
+              height: "8%",
+              paddingBottom: 8,
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => set_ls_visible(false)}
+              style={{ zIndex: 52, marginLeft: 25 }}
+            >
+              <Ionicons name="close-outline" size={32} color={"white"} />
+            </TouchableOpacity>
+            <Text
+              style={{
+                fontFamily: "MontserratBold",
+                fontSize: 15,
+                color: "white",
+                textAlign: "center",
+                width: "100%",
+                position: "absolute",
+                zIndex: 50,
+                bottom: 8,
+              }}
+            >
+              Queue
+            </Text>
+          </View>
 
-
-        <View style={{display:"flex", flexDirection:"row", alignItems:"flex-end" ,width:"100%",borderBottomColor:"#c45627",borderBottomWidth:1.5,height:"8%", paddingBottom:8}}>
-          <TouchableOpacity onPress={()=> set_ls_visible(false)} style={{zIndex:52, marginLeft:25}}><Ionicons name="close-outline" size={32} color={"white"} /></TouchableOpacity>
-          <Text style={{fontFamily:"MontserratBold", fontSize:15, color:"white", textAlign:"center", width:"100%", position:"absolute", zIndex:50, bottom:8}}>Queue</Text>
-        </View>
-
-        <View style={{width:"100%", gap:16, paddingLeft:25, paddingRight:25}}>
-          <Text style={{color:"white", fontFamily:"MontserratBold", fontSize:20, includeFontPadding:false}}>Trenutno pušteno</Text>
-           <View style={{display:"flex",flexDirection:"row", alignItems:"center",gap:15, width:"100%" }} >
+          <View
+            style={{
+              width: "100%",
+              gap: 16,
+              paddingLeft: 25,
+              paddingRight: 25,
+            }}
+          >
+            <Text
+              style={{
+                color: "white",
+                fontFamily: "MontserratBold",
+                fontSize: 20,
+                includeFontPadding: false,
+              }}
+            >
+              Trenutno pušteno
+            </Text>
+            <View
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 15,
+                width: "100%",
+              }}
+            >
               <View style={styles.coverShadow}>
-                <Image source={{uri:playingTrack?.artwork}} style={{width:64, height:64, borderRadius:4}}></Image>
+                <Image
+                  source={{ uri: playingTrack?.artwork }}
+                  style={{ width: 64, height: 64, borderRadius: 4 }}
+                ></Image>
               </View>
-              <View style={{flex:1}}>
-                <Text style={{color:"#F6C26B", fontFamily:"MontserratBold", }} numberOfLines={1} ellipsizeMode='tail'>{playingTrack?.title}</Text>
-                <Text style={{color:"white", fontFamily:"Montserrat"}} numberOfLines={1} ellipsizeMode='tail'>{playingTrack?.artist}</Text>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{ color: "#F6C26B", fontFamily: "MontserratBold" }}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {playingTrack?.title}
+                </Text>
+                <Text
+                  style={{ color: "white", fontFamily: "Montserrat" }}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {playingTrack?.artist}
+                </Text>
               </View>
             </View>
-        </View>
+          </View>
 
-
-        <View style={{flex:1,width:"100%", gap:16, paddingLeft:25, paddingRight:25}}>
-          <Text style={{color:"white", fontFamily:"MontserratBold", fontSize:20}}>Sledi</Text>
-          <View style={{flex:1}}>
-            {/* <LinearGradient colors={["#c55d31","transparent"]} 
+          <View
+            style={{
+              flex: 1,
+              width: "100%",
+              gap: 16,
+              paddingLeft: 25,
+              paddingRight: 25,
+            }}
+          >
+            <Text
+              style={{
+                color: "white",
+                fontFamily: "MontserratBold",
+                fontSize: 20,
+              }}
+            >
+              Sledi
+            </Text>
+            <View style={{ flex: 1 }}>
+              {/* <LinearGradient colors={["#c55d31","transparent"]} 
               style={{
               position:"absolute",
               zIndex: 100,
@@ -196,42 +306,70 @@ export function player() {
               height: 70,
               // pointerEvents: "none"
               }} /> */}
-    
-            <FlatList
-              data={podaci}
-              renderItem={({item, index}) => {
-                
-                let is_current = playingTrack?.id==item.id
-                return (
-                <View style={{display:"flex",flexDirection:"row", alignItems:"center",gap:15, width:"100%", backgroundColor: is_current ? "rgba(255,255,255,0.08)": "transparent"}} >
-                  <TouchableOpacity style={styles.coverShadow} onPress={()=> {
-                    play_by_index(index)
-                  }}>
-                    <Image source={{uri:item.artwork}} style={{width:64, height:64, borderRadius:4}}></Image>
-                  </TouchableOpacity>
-                  <View style={{flex:1}}>
-                    <Text style={{color:"white", fontFamily:"MontserratBold", }} numberOfLines={1} ellipsizeMode='tail'>{item.title}</Text>
-                    <Text style={{color:"white", fontFamily:"Montserrat"}} numberOfLines={1} ellipsizeMode='tail'>{item.artist}</Text>
-                  </View>
-                </View>
-              )}}
 
-              contentContainerStyle={{
-                gap:10,
-                display:"flex"
-              }}
-            >
-              
-              {/* <View style={{paddingLeft:25, paddingRight:25, width:"100%"}}>
+              <FlatList
+                data={podaci}
+                renderItem={({ item, index }) => {
+                  let is_current = playingTrack?.id == item.id;
+                  return (
+                    <View
+                      style={{
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 15,
+                        width: "100%",
+                        backgroundColor: is_current
+                          ? "rgba(255,255,255,0.08)"
+                          : "transparent",
+                      }}
+                    >
+                      <TouchableOpacity
+                        style={styles.coverShadow}
+                        onPress={() => {
+                          play_by_index(index);
+                        }}
+                      >
+                        <Image
+                          source={{ uri: item.artwork }}
+                          style={{ width: 64, height: 64, borderRadius: 4 }}
+                        ></Image>
+                      </TouchableOpacity>
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={{
+                            color: "white",
+                            fontFamily: "MontserratBold",
+                          }}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >
+                          {item.title}
+                        </Text>
+                        <Text
+                          style={{ color: "white", fontFamily: "Montserrat" }}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >
+                          {item.artist}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                }}
+                contentContainerStyle={{
+                  gap: 10,
+                  display: "flex",
+                }}
+              >
+                {/* <View style={{paddingLeft:25, paddingRight:25, width:"100%"}}>
                 <Text style={{fontFamily:"MontserratBold", fontSize:25, color:"white"}}>
                   {playingTrack?.lyrics} 
                 </Text>
               </View> */}
+              </FlatList>
 
-              
-            </FlatList>
-
-{/* 
+              {/* 
             <LinearGradient colors={[ "rgba(111,73,46,0)",
                     "rgba(111,73,46,0.2)",
                     "rgba(111,73,46,0.6)",
@@ -245,183 +383,336 @@ export function player() {
                     height: 70,
                     // pointerEvents: "none"
                     }} />  */}
+            </View>
           </View>
-        </View>
 
-        <View style={{display:"flex",justifyContent:"center",alignItems:"center", width:"100%",paddingLeft:25, paddingRight:25,marginBottom:25}}>
-                  <View style={{width:"100%"}}>
-                    <Slider
-                    style={{
-                      width: "100%",
-                      height: 20,
-                    }}
-                    minimumValue={0}
-                    maximumValue={duration}
-                    value={position}
-                    onSlidingComplete={AudioPro.seekTo}
-                    minimumTrackTintColor="#ff9f43"
-                    maximumTrackTintColor="gray"
-                    thumbTintColor="white"
-                    />
-                    <View style={{display:"flex", flexDirection:"row", justifyContent:"space-between"}}>
-                      <Text style={{fontFamily:"Montserrat", color:"white", fontSize:15}}>{to_seconds(position)}</Text>
-                      <Text style={{fontFamily:"Montserrat", color:"white", fontSize:15}}>{to_seconds(duration)}</Text>
+          <View
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              width: "100%",
+              paddingLeft: 25,
+              paddingRight: 25,
+              marginBottom: 25,
+            }}
+          >
+            <View style={{ width: "100%" }}>
+              <Slider
+                style={{
+                  width: "100%",
+                  height: 20,
+                }}
+                minimumValue={0}
+                maximumValue={duration}
+                value={position}
+                onSlidingComplete={AudioPro.seekTo}
+                minimumTrackTintColor="#ff9f43"
+                maximumTrackTintColor="gray"
+                thumbTintColor="white"
+              />
+              <View
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Montserrat",
+                    color: "white",
+                    fontSize: 15,
+                  }}
+                >
+                  {to_seconds(position)}
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: "Montserrat",
+                    color: "white",
+                    fontSize: 15,
+                  }}
+                >
+                  {to_seconds(duration)}
+                </Text>
+              </View>
+            </View>
 
-                    </View>
-                  </View>
-                  
-                  <LinearGradient 
-                  colors={["#FA9C6A", "#E2636F"]}
-                      
-                  style={{borderRadius:999, padding:20}}>
-                  <Animated.View style={{ opacity }}>
-                    <Ionicons name={AudioPro.getState()==AudioProState.PLAYING ? `pause`:"play"} color={"white"} size={30} onPress={()=> {
-                      
-                      toggleIcon()
-                      if (AudioPro.getState()==AudioProState.PLAYING)
-                        AudioPro.pause()
-                      else {
-                        AudioPro.resume()
-                      }
-                    }}></Ionicons>  
-                  </Animated.View>
-                  </LinearGradient>
-             
-        </View>
-
-
+            <LinearGradient
+              colors={["#FA9C6A", "#E2636F"]}
+              style={{ borderRadius: 999, padding: 20 }}
+            >
+              <Animated.View style={{ opacity }}>
+                <Ionicons
+                  name={
+                    AudioPro.getState() == AudioProState.PLAYING
+                      ? `pause`
+                      : "play"
+                  }
+                  color={"white"}
+                  size={30}
+                  onPress={() => {
+                    toggleIcon();
+                    if (AudioPro.getState() == AudioProState.PLAYING)
+                      AudioPro.pause();
+                    else {
+                      AudioPro.resume();
+                    }
+                  }}
+                ></Ionicons>
+              </Animated.View>
+            </LinearGradient>
+          </View>
         </LinearGradient>
-
-
       </Modal>
 
       <Modal visible={lyrics_visible} animationType="slide">
-        
-          <LinearGradient
-          
-          colors={["#d26b3f","#864b31","#744b2b","#64431b"]}
-
+        <LinearGradient
+          colors={["#d26b3f", "#864b31", "#744b2b", "#64431b"]}
           // colors={["#68493C", "#32202E", "#111425"]}
-          locations={[0,0.6, 0.8,0.9]}
+          locations={[0, 0.6, 0.8, 0.9]}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
-          style={{flex:1,display:"flex",justifyContent:"center", alignItems:"center"}}>
-            
-            <View style={{ gap:15, display:"flex", width:"100%",padding:25}}>
-              <View style={{display:"flex",flexDirection:"row", alignItems:"center",width:"100%",justifyContent:"space-between"}}>
-                <View style={{display:"flex",flexDirection:"row", alignItems:"center",gap:15 }} >
-                  <View style={styles.coverShadow}>
-                    <Image source={{uri:playingTrack?.artwork}} style={{width:64, height:64, borderRadius:4}}></Image>
-                  </View>
-                  <View style={{flex:1}}>
-                    <Text style={{color:"#F6C26B", fontFamily:"MontserratBold"}} numberOfLines={1} ellipsizeMode='tail'>{playingTrack?.title}</Text>
-                    <Text style={{color:"white"}} numberOfLines={1} ellipsizeMode='tail'>{playingTrack?.artist}</Text>
-                  </View>
-                  <TouchableOpacity onPress={()=>set_lyrics_visible(false)}><Ionicons name="close-outline"  size={32} color={"white"}></Ionicons></TouchableOpacity>
-
+          style={{
+            flex: 1,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <View
+            style={{ gap: 15, display: "flex", width: "100%", padding: 25 }}
+          >
+            <View
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                width: "100%",
+                justifyContent: "space-between",
+              }}
+            >
+              <View
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 15,
+                }}
+              >
+                <View style={styles.coverShadow}>
+                  <Image
+                    source={{ uri: playingTrack?.artwork }}
+                    style={{ width: 64, height: 64, borderRadius: 4 }}
+                  ></Image>
                 </View>
-                
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{ color: "#F6C26B", fontFamily: "MontserratBold" }}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {playingTrack?.title}
+                  </Text>
+                  <Text
+                    style={{ color: "white" }}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {playingTrack?.artist}
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={() => set_lyrics_visible(false)}>
+                  <Ionicons
+                    name="close-outline"
+                    size={32}
+                    color={"white"}
+                  ></Ionicons>
+                </TouchableOpacity>
               </View>
-              <View style={{width:"100%"}}>
-                <Text style={{fontFamily:"MontserratBold", color:"#4d1700", fontSize:13}}>Ovaj tekst nije sinhronizovan sa pesmom, za sada.</Text>
-                
-              </View>
-             
-              
             </View>
+            <View style={{ width: "100%" }}>
+              <Text
+                style={{
+                  fontFamily: "MontserratBold",
+                  color: "#4d1700",
+                  fontSize: 13,
+                }}
+              >
+                Ovaj tekst nije sinhronizovan sa pesmom, za sada.
+              </Text>
+            </View>
+          </View>
 
-            <View style={{width:"100%",  flex:1, display:"flex",gap:15, marginBottom:25}}>
-              <View style={{flex:1}}>
-                <LinearGradient colors={["#c55d31","transparent"]} 
-                  style={{
-                  position:"absolute",
+          <View
+            style={{
+              width: "100%",
+              flex: 1,
+              display: "flex",
+              gap: 15,
+              marginBottom: 25,
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <LinearGradient
+                colors={["#c55d31", "transparent"]}
+                style={{
+                  position: "absolute",
                   zIndex: 100,
                   left: 0,
-                  top:0,
+                  top: 0,
                   right: 0,
                   height: 70,
                   // pointerEvents: "none"
-                  }} />
-        
-                <ScrollView >
-                  
-                  <View style={{paddingLeft:25, paddingRight:25, width:"100%"}}>
-                    <Text style={{fontFamily:"MontserratBold", fontSize:25, color:"white"}}>
-                      {playingTrack?.lyrics} 
-                    </Text>
-                  </View>
-                </ScrollView>
+                }}
+              />
 
+              <ScrollView>
+                <View
+                  style={{ paddingLeft: 25, paddingRight: 25, width: "100%" }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "MontserratBold",
+                      fontSize: 25,
+                      color: "white",
+                    }}
+                  >
+                    {playingTrack?.lyrics}
+                  </Text>
+                </View>
+              </ScrollView>
 
-                <LinearGradient colors={[ "rgba(111,73,46,0)",
-                        "rgba(111,73,46,0.2)",
-                        "rgba(111,73,46,0.6)",
-                        "#6f492e"]} 
-                        style={{
-                        position:"absolute",
-                        zIndex: 100,
-                        left: 0,
-                        bottom:0,
-                        right: 0,
-                        height: 70,
-                        // pointerEvents: "none"
-                        }} /> 
+              <LinearGradient
+                colors={[
+                  "rgba(111,73,46,0)",
+                  "rgba(111,73,46,0.2)",
+                  "rgba(111,73,46,0.6)",
+                  "#6f492e",
+                ]}
+                style={{
+                  position: "absolute",
+                  zIndex: 100,
+                  left: 0,
+                  bottom: 0,
+                  right: 0,
+                  height: 70,
+                  // pointerEvents: "none"
+                }}
+              />
+            </View>
 
+            <View
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                width: "100%",
+                paddingLeft: 25,
+                paddingRight: 25,
+              }}
+            >
+              <View style={{ width: "100%" }}>
+                <Slider
+                  style={{
+                    width: "100%",
+                    height: 20,
+                  }}
+                  minimumValue={0}
+                  maximumValue={duration}
+                  value={position}
+                  onSlidingComplete={AudioPro.seekTo}
+                  minimumTrackTintColor="#ff9f43"
+                  maximumTrackTintColor="gray"
+                  thumbTintColor="white"
+                />
+                <View
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "Montserrat",
+                      color: "white",
+                      fontSize: 15,
+                    }}
+                  >
+                    {to_seconds(position)}
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: "Montserrat",
+                      color: "white",
+                      fontSize: 15,
+                    }}
+                  >
+                    {to_seconds(duration)}
+                  </Text>
+                </View>
               </View>
 
-                <View style={{display:"flex",justifyContent:"center",alignItems:"center", width:"100%",paddingLeft:25, paddingRight:25}}>
-                  <View style={{width:"100%"}}>
-                    <Slider
-                    style={{
-                      width: "100%",
-                      height: 20,
-                    }}
-                    minimumValue={0}
-                    maximumValue={duration}
-                    value={position}
-                    onSlidingComplete={AudioPro.seekTo}
-                    minimumTrackTintColor="#ff9f43"
-                    maximumTrackTintColor="gray"
-                    thumbTintColor="white"
-                    />
-                    <View style={{display:"flex", flexDirection:"row", justifyContent:"space-between"}}>
-                      <Text style={{fontFamily:"Montserrat", color:"white", fontSize:15}}>{to_seconds(position)}</Text>
-                      <Text style={{fontFamily:"Montserrat", color:"white", fontSize:15}}>{to_seconds(duration)}</Text>
-
-                    </View>
-                  </View>
-                  
-                  <LinearGradient 
-                  colors={["#FA9C6A", "#E2636F"]}
-                      
-                  style={{borderRadius:999, padding:20}}>
-                  <Animated.View style={{ opacity }}>
-                    <Ionicons name={AudioPro.getState()==AudioProState.PLAYING ? `pause`:"play"} color={"white"} size={30} onPress={()=> {
-                      
-                      toggleIcon()
-                      if (AudioPro.getState()==AudioProState.PLAYING)
-                        AudioPro.pause()
+              <LinearGradient
+                colors={["#FA9C6A", "#E2636F"]}
+                style={{ borderRadius: 999, padding: 20 }}
+              >
+                <Animated.View style={{ opacity }}>
+                  <Ionicons
+                    name={
+                      AudioPro.getState() == AudioProState.PLAYING
+                        ? `pause`
+                        : "play"
+                    }
+                    color={"white"}
+                    size={30}
+                    onPress={() => {
+                      toggleIcon();
+                      if (AudioPro.getState() == AudioProState.PLAYING)
+                        AudioPro.pause();
                       else {
-                        AudioPro.resume()
+                        AudioPro.resume();
                       }
-                    }}></Ionicons>  
-                  </Animated.View>
-                  </LinearGradient>
-             
-                </View>
+                    }}
+                  ></Ionicons>
+                </Animated.View>
+              </LinearGradient>
             </View>
-          
-          </LinearGradient>
+          </View>
+        </LinearGradient>
       </Modal>
-      <View style={{height:"40%", display:"flex", gap:40}}>
-        <View style={{display:"flex", justifyContent:"space-between", alignItems:"center",  flexDirection:"row", marginTop:10}}>
-         
-          <TouchableOpacity onPress={()=> {router.back()}}><Ionicons name="chevron-back-outline" size={32} color={"white"} ></Ionicons></TouchableOpacity>
-          <TouchableOpacity onPress={()=> set_ls_visible(!list_of_songs_visible)}><Ionicons name="menu-outline"  size={32} color={"white"}></Ionicons></TouchableOpacity>
+      <View style={{ height: "40%", display: "flex", gap: 40 }}>
+        <View
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexDirection: "row",
+            marginTop: 10,
+          }}
+        >
+          <TouchableOpacity
+            onPress={() => {
+              router.back();
+            }}
+          >
+            <Ionicons
+              name="chevron-back-outline"
+              size={32}
+              color={"white"}
+            ></Ionicons>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => set_ls_visible(!list_of_songs_visible)}
+          >
+            <Ionicons name="menu-outline" size={32} color={"white"}></Ionicons>
+          </TouchableOpacity>
         </View>
-        <View style={{display:"flex", alignItems:"center"}}>
+        <View style={{ display: "flex", alignItems: "center" }}>
           {/* <View style={{backgroundColor:"#442C33", display:"flex", alignItems:"center", borderRadius:10, paddingTop:7,paddingBottom:7}}> */}
-            {/* <LinearGradient
+          {/* <LinearGradient
             colors={["#FFB86B", "#571c2b"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -438,121 +729,198 @@ export function player() {
         
                 style={{width:"230", height:"230", borderRadius:10}}/>
           </LinearGradient> */}
-        <Animated.View style={{ opacity:opacity2 }}>
-          {/* url pesme ce ici */}
-          <Image 
-          source={{uri: `${playingTrack?.artwork}`}}
-          style={{width:230,height:230, borderRadius:10}}
-          
-          ></Image>
+          <Animated.View style={{ opacity: opacity2 }}>
+            {/* url pesme ce ici */}
+            <Image
+              source={{ uri: `${playingTrack?.artwork}` }}
+              style={{ width: 230, height: 230, borderRadius: 10 }}
+            ></Image>
           </Animated.View>
         </View>
       </View>
-      
-      <View style={{height:"60%"}}>
-        <Animated.View style={{ opacity:opacity2 }}><View style={{display:"flex", justifyContent:"center", alignItems:"center", paddingTop:20}}>
-          <Text style={{fontFamily:"MontserratBold", color:"white", fontSize:20, textAlign:"center"}}>{playingTrack?.title}</Text>
-          <View style={{display:"flex", justifyContent:"center", alignItems:"center"}}>
-            <Text style={{fontFamily:"Montserrat", color:"gray"}}>{playingTrack?.artist}</Text>
-            {/* <Text style={{fontFamily:"Montserrat", color:"gray"}}>Album Title</Text> */}
-            
-          </View>
-    
-        </View></Animated.View>
-        
-        
-        <View style={{ paddingTop:50}}>
-          <View style={{flexDirection:"row", display:"flex", justifyContent:"space-between"}}>
-            <TouchableOpacity onPress={async ()=> {
-                            let id_azapisa = eval(playingTrack.id)
-                            // console.log(`${id_azapisa} | ${loaded_ime}`)
-                            let response = await fetch(`http://192.168.0.22:8000/bookmark/${loaded_ime}`, {
-                              method:"POST",
-                              body:
-                              new URLSearchParams({
-                                idSnimka: playingTrack.id
-                              },
-                            ).toString(),
-                            headers: {
-                              "Content-type": "application/x-www-form-urlencoded"
-                            }
-                            })
-            
-                            if (!response.ok) {
-                              Alert.alert("Nešto nije u redu sa lajkovanjem pesme !")
-                              return
-            
-                            }
-                            
-                            let response_text = await response.text()
-                            // console.log(`CUVANJE: ${response_text}`)
-            
-                            // set_like(true)
-                            // setTimeout(()=> {
-                            //   set_like(false)
-                            // }, 100)           //iz nekog nepoznatog razloga je moralo da se ovo doda tj setTimeout jer valjda zbog prebrzog menjanja vrednosti state-ova react native nije mogao to da povata kod komponenti
-                                              //drugog objašnjenja nemam, iako je on primećivao promene, nije hteo da ih primeti u okviru komponenti, nemam komentar
-                            // set_like(false)
-            
-            
-            
-                            if (response_text==1) {
-                              loaded_bookmark[playingTrack.id]={artist:playingTrack.artist, artwork: playingTrack.artwork.replace("http://192.168.0.22:8000",""), id:playingTrack.id, "lyrics":playingTrack.lyrics, "title":playingTrack.title, url: playingTrack.url.replace("http://192.168.0.22:8000", "")}
-                              
-                              // await download_save(item.url,item.artwork,item.title)
-            
-            
-                              // const file = new File(Paths.document, "songs", item.title)
-            
-                              // if (file.exists)
-                              //   Alert.alert("Uspešno preuzeta pesma.")
-                              // else
-                              //   Alert.alert(`Nije se preuzela pesma: ${item.title}`)
-            
-                            }
-                            else if (response_text==-1) { 
-                              // parsed_data.Bookmark[id_azapisa]=false
-                              delete loaded_bookmark[playingTrack.id]
-            
-                              
-                              
-                              // const file_audio = new File(Paths.document, "songs", item.title + ".mp3")
-                              // const file_thumbnail = new File(Paths.document, "thumbnails", item.title + ".png")
-            
-                              // if (file_audio.exists)
-                              //   file_audio.delete()
-            
-                              // if (file_thumbnail.exists)
-                              //   file_thumbnail.delete()
-                            }
-                              // console.log(parsed_data)
-                              loaded_zustand_sid({...loaded_bookmark})
-            
-            
-            
-                            
-            
-                            // console.log(id_azapisa)
-                          }}>
-                            {/* <Ionicons name="heart-outline"size={30} color={"white"}></Ionicons> */}
-                            {/* {console.log(playingTrack.id)} */}
-                            {/* {console.log(loaded_bookmark)} */}
-                            {/* {console.log(loaded_bookmark[playingTrack.id])} */}
-                            <Ionicons name={playingTrack?.id && loaded_bookmark[playingTrack.id] ? "heart": "heart-outline"}   size={32} color={playingTrack?.id && loaded_bookmark[playingTrack.id] ? "red": "white"}></Ionicons>
 
-                          </TouchableOpacity>
-            <TouchableOpacity onPress={()=>{
-              let ispunjen_uslov = AudioPro.getVolume()==1
-              if (ispunjen_uslov) {
-                AudioPro.setVolume(0)
-              }
-              else {
-                AudioPro.setVolume(1)
-              }
-              }}><Ionicons name={AudioPro.getVolume()==1 ? `volume-high-outline`:`volume-mute-outline`} size={30} color={"white"}></Ionicons></TouchableOpacity>
+      <View style={{ height: "60%" }}>
+        <Animated.View style={{ opacity: opacity2 }}>
+          <View
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              paddingTop: 20,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: "MontserratBold",
+                color: "white",
+                fontSize: 20,
+                textAlign: "center",
+              }}
+            >
+              {playingTrack?.title}
+            </Text>
+            <View
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ fontFamily: "Montserrat", color: "gray" }}>
+                {playingTrack?.artist}
+              </Text>
+              {/* <Text style={{fontFamily:"Montserrat", color:"gray"}}>Album Title</Text> */}
+            </View>
+          </View>
+        </Animated.View>
+
+        <View style={{ paddingTop: 50 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              display: "flex",
+              justifyContent: "space-between",
+            }}
+          >
+            <TouchableOpacity
+              onPress={async () => {
+                let id_azapisa = eval(playingTrack.id);
+                // console.log(`${id_azapisa} | ${loaded_ime}`)
+                let response = await fetch(
+                  `http://192.168.0.22:8000/bookmark/${loaded_ime}`,
+                  {
+                    method: "POST",
+                    body: new URLSearchParams({
+                      idSnimka: playingTrack.id,
+                    }).toString(),
+                    headers: {
+                      "Content-type": "application/x-www-form-urlencoded",
+                    },
+                  },
+                );
+
+                if (!response.ok) {
+                  Alert.alert("Nešto nije u redu sa lajkovanjem pesme !");
+                  return;
+                }
+
+                let response_text = await response.text();
+                // console.log(`CUVANJE: ${response_text}`)
+
+                // set_like(true)
+                // setTimeout(()=> {
+                //   set_like(false)
+                // }, 100)           //iz nekog nepoznatog razloga je moralo da se ovo doda tj setTimeout jer valjda zbog prebrzog menjanja vrednosti state-ova react native nije mogao to da povata kod komponenti
+                //drugog objašnjenja nemam, iako je on primećivao promene, nije hteo da ih primeti u okviru komponenti, nemam komentar
+                // set_like(false)
+
+                if (response_text == 1) {
+                  loaded_bookmark[playingTrack.id] = {
+                    artist: playingTrack.artist,
+                    artwork: playingTrack.artwork.replace(
+                      "http://192.168.0.22:8000",
+                      "",
+                    ),
+                    id: playingTrack.id,
+                    lyrics: playingTrack.lyrics,
+                    title: playingTrack.title,
+                    url: playingTrack.url.replace(
+                      "http://192.168.0.22:8000",
+                      "",
+                    ),
+                  };
+
+                  await download_save(
+                    playingTrack.url,
+                    playingTrack.artwork,
+                    playingTrack.title,
+                  );
+
+                  const file_audio = new File(
+                    Paths.document,
+                    "songs",
+                    playingTrack.title + ".mp3",
+                  );
+                  const file_thumbnail = new File(
+                    Paths.document,
+                    "thumbnails",
+                    playingTrack.title + ".png",
+                  );
+
+                  if (file_audio.exists && file_thumbnail.exists)
+                    Alert.alert("Uspešno preuzeta pesma.");
+                  else {
+                    Alert.alert(
+                      `Nije se preuzela pesma ili njen thumbnail: ${playingTrack.title}`,
+                    );
+                    return;
+                  }
+                } else if (response_text == -1) {
+                  // parsed_data.Bookmark[id_azapisa]=false
+                  delete loaded_bookmark[playingTrack.id];
+
+                  const file_audio = new File(
+                    Paths.document,
+                    "songs",
+                    playingTrack.title + ".mp3",
+                  );
+                  const file_thumbnail = new File(
+                    Paths.document,
+                    "thumbnails",
+                    playingTrack.title + ".png",
+                  );
+
+                  if (file_audio.exists) file_audio.delete();
+
+                  if (file_thumbnail.exists) file_thumbnail.delete();
+                }
+                // console.log(parsed_data)
+                loaded_zustand_sid({ ...loaded_bookmark });
+
+                // console.log(id_azapisa)
+              }}
+            >
+              {/* <Ionicons name="heart-outline"size={30} color={"white"}></Ionicons> */}
+              {/* {console.log(playingTrack.id)} */}
+              {/* {console.log(loaded_bookmark)} */}
+              {/* {console.log(loaded_bookmark[playingTrack.id])} */}
+              <Ionicons
+                name={
+                  playingTrack?.id && loaded_bookmark[playingTrack.id]
+                    ? "heart"
+                    : "heart-outline"
+                }
+                size={32}
+                color={
+                  playingTrack?.id && loaded_bookmark[playingTrack.id]
+                    ? "red"
+                    : "white"
+                }
+              ></Ionicons>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                let ispunjen_uslov = AudioPro.getVolume() == 1;
+                if (ispunjen_uslov) {
+                  AudioPro.setVolume(0);
+                } else {
+                  AudioPro.setVolume(1);
+                }
+              }}
+            >
+              <Ionicons
+                name={
+                  AudioPro.getVolume() == 1
+                    ? `volume-high-outline`
+                    : `volume-mute-outline`
+                }
+                size={30}
+                color={"white"}
+              ></Ionicons>
+            </TouchableOpacity>
           </View>
           {/* <View style={{display:"flex", justifyContent:"center", alignItems:"center"}}> */}
-           {/* <LinearGradient
+          {/* <LinearGradient
         colors={["#ff5c8a", "#ff9f43"]}
         start={{ x: 0, y: 0}}
         end={{ x: 1, y: 0 }}
@@ -574,7 +942,7 @@ export function player() {
 
 
           </Slider> */}
-        {/* <View style={styles.sliderContainer}>
+          {/* <View style={styles.sliderContainer}>
         Gray background
         <View style={styles.backgroundTrack} /> */}
 
@@ -593,70 +961,154 @@ export function player() {
         
     />  */}
 
-    {/* Actual slider */}
-    <Slider
-        style={styles.slider}
-        minimumValue={0}
-        maximumValue={duration}
-        value={position}
-        onSlidingComplete={AudioPro.seekTo}
-        minimumTrackTintColor="#ff9f43"
-        maximumTrackTintColor="gray"
-        thumbTintColor="white"
-    />
+          {/* Actual slider */}
+          <Slider
+            style={styles.slider}
+            minimumValue={0}
+            maximumValue={duration}
+            value={position}
+            onSlidingComplete={AudioPro.seekTo}
+            minimumTrackTintColor="#ff9f43"
+            maximumTrackTintColor="gray"
+            thumbTintColor="white"
+          />
 
-    
-{/* </View> */}
-      {/* </View> */}
-      <View style={{display:"flex", flexDirection:"row", justifyContent:"space-between"}}>
-        <Text style={{fontFamily:"Montserrat", color:"white", fontSize:15}}>{to_seconds(position)}</Text>
-        <Text style={{fontFamily:"Montserrat", color:"white", fontSize:15}}>{to_seconds(duration)}</Text>
+          {/* </View> */}
+          {/* </View> */}
+          <View
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "space-between",
+            }}
+          >
+            <Text
+              style={{ fontFamily: "Montserrat", color: "white", fontSize: 15 }}
+            >
+              {to_seconds(position)}
+            </Text>
+            <Text
+              style={{ fontFamily: "Montserrat", color: "white", fontSize: 15 }}
+            >
+              {to_seconds(duration)}
+            </Text>
+          </View>
 
-      </View>
-        
-      <View style={{display:"flex", flexDirection:"row", justifyContent:"space-between", paddingTop:35, alignItems:"center"}}>
-        <TouchableOpacity onPress={()=>{AudioPro.seekTo(0)}} ><Ionicons name="reload-outline" color={"white"} size={30} ></Ionicons></TouchableOpacity>
-        <TouchableOpacity onPress={()=>{play_previous()}}><Ionicons name="play-back-outline" color={"white"} size={30} ></Ionicons></TouchableOpacity>
-        <LinearGradient 
-        colors={["#FA9C6A", "#E2636F"]}
-            
-        style={{borderRadius:999, padding:20}}>
-        <Animated.View style={{ opacity }}>
-          <Ionicons name={AudioPro.getState()==AudioProState.PLAYING ? `pause`:"play"} color={"white"} size={30} onPress={()=> {
-            
-            toggleIcon()
-            if (AudioPro.getState()==AudioProState.PLAYING)
-              AudioPro.pause()
-            else {
-              AudioPro.resume()
-            }
-          }}></Ionicons>  
-        </Animated.View>
-        </LinearGradient>
-        <TouchableOpacity onPress={()=>play_next()}><Ionicons name="play-forward-outline" color={"white"} size={30} ></Ionicons></TouchableOpacity>
-        <TouchableOpacity onPress={()=>{load_shuffled(true)}}><Ionicons name="shuffle-outline" color={"white"} size={30}></Ionicons></TouchableOpacity>
-      </View>
-          
-      </View>
-      
-      <View style={{display:"flex",justifyContent:"center", alignItems:"center", paddingTop:50}}>
-        <TouchableOpacity style={{display:"flex",justifyContent:"center", alignItems:"center",}} onPress={()=>{
-          if (playingTrack?.lyrics)
-            set_lyrics_visible(!lyrics_visible)
-        }}>
-        <Ionicons name="chevron-up" color={playingTrack?.lyrics ? "white":"gray"  } size={32}></Ionicons>
-        <Text style={{fontFamily:"Montserrat", color:playingTrack?.lyrics ? "white":"gray"  }}>Lyrics</Text>
-        </TouchableOpacity>
-      </View>
-      
-      </View>
-      </LinearGradient>
+          <View
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "space-between",
+              paddingTop: 35,
+              alignItems: "center",
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => {
+                AudioPro.seekTo(0);
+              }}
+            >
+              <Ionicons
+                name="reload-outline"
+                color={"white"}
+                size={30}
+              ></Ionicons>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                play_previous();
+              }}
+            >
+              <Ionicons
+                name="play-back-outline"
+                color={"white"}
+                size={30}
+              ></Ionicons>
+            </TouchableOpacity>
+            <LinearGradient
+              colors={["#FA9C6A", "#E2636F"]}
+              style={{ borderRadius: 999, padding: 20 }}
+            >
+              <Animated.View style={{ opacity }}>
+                <Ionicons
+                  name={
+                    AudioPro.getState() == AudioProState.PLAYING
+                      ? `pause`
+                      : "play"
+                  }
+                  color={"white"}
+                  size={30}
+                  onPress={() => {
+                    toggleIcon();
+                    if (AudioPro.getState() == AudioProState.PLAYING)
+                      AudioPro.pause();
+                    else {
+                      AudioPro.resume();
+                    }
+                  }}
+                ></Ionicons>
+              </Animated.View>
+            </LinearGradient>
+            <TouchableOpacity onPress={() => play_next()}>
+              <Ionicons
+                name="play-forward-outline"
+                color={"white"}
+                size={30}
+              ></Ionicons>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                load_shuffled(true);
+              }}
+            >
+              <Ionicons
+                name="shuffle-outline"
+                color={"white"}
+                size={30}
+              ></Ionicons>
+            </TouchableOpacity>
+          </View>
+        </View>
 
-    )
-  
+        <View
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            paddingTop: 50,
+          }}
+        >
+          <TouchableOpacity
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+            onPress={() => {
+              if (playingTrack?.lyrics) set_lyrics_visible(!lyrics_visible);
+            }}
+          >
+            <Ionicons
+              name="chevron-up"
+              color={playingTrack?.lyrics ? "white" : "gray"}
+              size={32}
+            ></Ionicons>
+            <Text
+              style={{
+                fontFamily: "Montserrat",
+                color: playingTrack?.lyrics ? "white" : "gray",
+              }}
+            >
+              Lyrics
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </LinearGradient>
+  );
 }
 
-export default player
+export default player;
 
 const THUMB_SIZE = 24;
 const TRACK_HEIGHT = 4;
@@ -680,44 +1132,41 @@ const TRACK_HEIGHT = 4;
 // });
 
 const styles = StyleSheet.create({
-    sliderContainer: {
-        height: 50,
-        justifyContent: "center",
-        padding:0,
-        
-    },
+  sliderContainer: {
+    height: 50,
+    justifyContent: "center",
+    padding: 0,
+  },
 
-    backgroundTrack: {
-        position: "absolute",
-        height: 8,
-        backgroundColor: "#555",
-        width:"100%",
-        borderRadius: 2,
-        padding:0,
-        // marginLeft:10,
-        // marginRight:10
-        left:10,
-        right:10
+  backgroundTrack: {
+    position: "absolute",
+    height: 8,
+    backgroundColor: "#555",
+    width: "100%",
+    borderRadius: 2,
+    padding: 0,
+    // marginLeft:10,
+    // marginRight:10
+    left: 10,
+    right: 10,
+  },
 
-    },
+  loadedTrack: {
+    position: "absolute",
+    height: 8,
+    // width:"94%",
+    borderRadius: 2,
+    padding: 0,
+    left: 10,
+    // marginLeft:10,
+    // marginRight:10
+  },
 
-    loadedTrack: {
-        position: "absolute",
-        height: 8,
-        // width:"94%",
-        borderRadius: 2,
-        padding: 0,
-        left:10
-        // marginLeft:10,
-        // marginRight:10
-    },
-
-    slider: {
-        width: "100%",
-        height: 60,
-        
-    },
-coverShadow: {
+  slider: {
+    width: "100%",
+    height: 60,
+  },
+  coverShadow: {
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -729,5 +1178,4 @@ coverShadow: {
     // Android
     elevation: 8,
   },
-    
 });
