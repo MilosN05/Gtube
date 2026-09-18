@@ -37,7 +37,6 @@ export function Context({ children, style }) {
 
     loaded_zustand_sime(received_json.Ime);
     loaded_zustand_sid(received_json.Bookmark);
-
     set_info_data(JSON.stringify(received_json));
   }
 
@@ -106,13 +105,15 @@ export function Context({ children, style }) {
   useEffect(() => {
     ///Ideja je da je moguće imati online pristup AKO I SAMO AKO JE SERVER DOSTUPAN I KLIJENT IMA VEZU SA INTERNETOM !
     set_online_ac(is_connected && is_sactive);
+    // let loaded_set_online_access_zus = outer_store.getState().set_online_access_zus;
+    // loaded_set_online_access_zus(is_connected && is_sactive);
 
     if (is_connected && is_sactive) get_data(params.info_data);
 
     // console.log(`ONLINE: ${online_access}`)
   }, [is_sactive, is_connected]);
   return (
-    <UserContext value={{ info_data, set_info_data, online_access }}>
+    <UserContext value={{ info_data, set_info_data }}>
       <View style={{ ...style }}>{children}</View>
     </UserContext>
   );

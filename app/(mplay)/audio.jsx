@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { File, Paths } from "expo-file-system";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
@@ -91,6 +92,34 @@ async function get_data(funkcija, id) {
   }
 }
 
+async function get_data_bookmark(funkcija, id, online_access) {
+  let loaded_downloaded_md = outer_store.getState().downloaded_info;
+  let loaded_bookmark = outer_store.getState().Bookmark;
+
+  if (online_access) {
+    loaded_bookmark = Object.values(loaded_bookmark);
+
+    loaded_bookmark = loaded_bookmark.map((data) => ({
+      ...data,
+      artwork: "http://192.168.0.22:8000" + data.artwork,
+      url: "http://192.168.0.22:8000" + data.url,
+    }));
+
+    console.log(loaded_bookmark);
+
+    // loaded_bookmark.forEach((data) => {
+    //   data.artwork = "http://192.168.0.22:8000" + data.artwork;
+    //   data.url = "http://192.168.0.22:8000" + data.url;
+    // });
+  } else loaded_downloaded_md = Object.values(loaded_downloaded_md);
+  // console.log(data)
+
+  let data = online_access ? loaded_bookmark : loaded_downloaded_md;
+
+  funkcija(data);
+  setTracks(data);
+}
+
 function to_seconds(ms) {
   let sekunde = Math.trunc(Math.trunc(ms % 60000) / 1000);
   let minute = Math.trunc(ms / 60000);
@@ -107,7 +136,7 @@ export function player() {
     volume,
     error,
   } = useAudioPro();
-  const { id } = useLocalSearchParams();
+  const { id, online_access, bookmark_access } = useLocalSearchParams();
   let [vrednost, setVrednost] = useState(0);
   let [podaci, ucitaj_podatke] = useState([]);
   let [lyrics_visible, set_lyrics_visible] = useState(false);
@@ -115,22 +144,50 @@ export function player() {
 
   let loaded_zustand_sid = outer_store((state) => state.set_info_data_zus);
   let loaded_bookmark = outer_store((state) => state.Bookmark);
+  let loaded_downloaded_md = outer_store((state) => state.downloaded_info);
   let loaded_ime = outer_store((state) => state.Ime);
   // console.log(useUser())
-
+  // console.log(
+  //   `BOOKMARK ACCESS: ${bookmark_access} || ONLINE ACCESS: ${online_access}`,
+  // );
+  // console.log("audio screen");
   // console.log(playingTrack)
   useEffect(() => {
     AudioPro.configure({
       contentType: AudioProContentType.MUSIC,
       debug: __DEV__,
     });
-    get_data(ucitaj_podatke, id);
+    // console.log(
+    //   `PRIMLJENO: ${id} type: ${typeof id} || PRIMLJENO: ${online_access}`,
+    // );
+    // console.log(bookmark_access);
+    if (!bookmark_access) get_data(ucitaj_podatke, id);
+    else get_data_bookmark(ucitaj_podatke, id, JSON.parse(online_access));
   }, []);
 
   useEffect(() => {
-    if (podaci[0] && playingTrack && podaci[0].id != playingTrack.id)
-      AudioPro.play(podaci[0]);
-    else if (!playingTrack && podaci[0]) AudioPro.play(podaci[0]);
+    if (!bookmark_access) {
+      if (podaci[0] && playingTrack && podaci[0].id != playingTrack.id)
+        AudioPro.play(podaci[0]);
+      else if (!playingTrack && podaci[0]) AudioPro.play(podaci[0]);
+    } else {
+      let song_to_play = JSON.parse(online_access)
+        ? loaded_bookmark[id]
+        : loaded_downloaded_md[id];
+
+      // song_to_play.url = "http://192.168.0.22:8000" + song_to_play.url;
+      // song_to_play.artwork = "http://192.168.0.22:8000" + song_to_play.artwork;
+
+      song_to_play = {
+        ...song_to_play,
+        url: "http://192.168.0.22:8000" + song_to_play.url,
+        artwork: "http://192.168.0.22:8000" + song_to_play.artwork,
+      };
+
+      if (song_to_play && playingTrack && song_to_play.id != playingTrack.id)
+        AudioPro.play(song_to_play);
+      else if (!playingTrack && song_to_play) AudioPro.play(song_to_play);
+    }
   }, [podaci]);
 
   useEffect(() => {

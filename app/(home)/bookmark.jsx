@@ -6,6 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
+  Alert,
   FlatList,
   Modal,
   StyleSheet,
@@ -13,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useAudioPro } from "react-native-audio-pro";
 import { outer_store } from "../../store/store";
 import { useUser } from "../user_context";
 import { download_save } from "./main";
@@ -44,9 +46,10 @@ export default function bookmark() {
   const [visible_song_options, set_visible_song_options] = useState(false);
 
   const { info_data, online_access } = useUser();
+  const { playingTrack } = useAudioPro();
   const parsed_data = JSON.parse(info_data);
 
-  // console.log(online_access)
+  // console.log(`OA FROM BOOKMARK: ${online_access}`);
   // console.log(parsed_data)
   let loaded_zustand_sid = outer_store((state) => state.set_info_data_zus);
   let loaded_bookmark = outer_store((state) => state.Bookmark);
@@ -316,7 +319,7 @@ export default function bookmark() {
                     <Ionicons
                       name="heart-outline"
                       size={30}
-                      color={"white"}
+                      color={online_access ? "white" : "gray"}
                     ></Ionicons>
                   </View>
                   <Text
@@ -345,10 +348,18 @@ export default function bookmark() {
           display: "flex",
           alignItems: "center",
           padding: 30,
+
           opacity: visible_song_options != false ? 0.4 : 1,
         }}
       >
-        <View style={{ width: "100%", height: "30%", display: "flex", gap: 9 }}>
+        <View
+          style={{
+            width: "100%",
+            height: "30%",
+            display: "flex",
+            gap: 9,
+          }}
+        >
           <Text
             style={{
               fontFamily: "MontserratBold",
@@ -452,7 +463,7 @@ export default function bookmark() {
                 <View
                   style={{
                     padding: 12,
-                    backgroundColor: "#D6A15F",
+                    backgroundColor: "#EC786B",
                     borderRadius: 333,
                     display: "flex",
                     justifyContent: "center",
@@ -523,8 +534,12 @@ export default function bookmark() {
                     flexDirection: "row",
                     alignItems: "center",
                     gap: 15,
+                    borderRadius: 10,
                     width: "100%",
-                    backgroundColor: "transparent",
+                    backgroundColor:
+                      playingTrack && playingTrack.id == item.id
+                        ? "#222640"
+                        : "transparent",
                     opacity:
                       loaded_downloaded_md &&
                       loaded_downloaded_md[item.id]?.url &&
@@ -537,6 +552,15 @@ export default function bookmark() {
                     style={styles.coverShadow}
                     onPress={() => {
                       // play_by_index(index)
+
+                      router.push({
+                        pathname: "/(mplay)/audio",
+                        params: {
+                          id: item.id,
+                          bookmark_access: true,
+                          online_access: online_access,
+                        },
+                      });
                     }}
                   >
                     <Image
@@ -559,7 +583,13 @@ export default function bookmark() {
                   >
                     <View style={{ display: "flex", flex: 1 }}>
                       <Text
-                        style={{ color: "white", fontFamily: "MontserratBold" }}
+                        style={{
+                          color:
+                            playingTrack && playingTrack.id == item.id
+                              ? "#EC786B"
+                              : "white",
+                          fontFamily: "MontserratBold",
+                        }}
                         numberOfLines={1}
                         ellipsizeMode="tail"
                       >

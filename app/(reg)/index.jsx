@@ -17,11 +17,8 @@ async function is_logged() {
     let meta_data_songs = JSON.parse(
       await AsyncStorage.getItem("meta_data_songs"),
     );
-    // console.log(`DOWNLOADED: ${meta_data_songs}`)
-    loaded_zustand_sime(meta_data_songs);
 
-    // console.log(`TEST: ${state.isInternetReachable}`)
-    // console.log(`TEST 2: ${state.isConnected}`)
+    loaded_zustand_sime(meta_data_songs);
 
     if (state.isInternetReachable == false) {
       router.push({
