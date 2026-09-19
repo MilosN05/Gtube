@@ -6,7 +6,10 @@ import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useRef, useState } from "react";
 import { Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { outer_store } from "../../store/store";
 import { request_data } from "./signin";
+
+let loaded_zustand_s_info_data = outer_store.getState().set_info_data_zus;
 
 async function register(ime, email, telefon, datumr, sifra, objekat_r) {
   let state = await NetInfo.fetch();
@@ -389,14 +392,9 @@ export default function signIn() {
                   SecureStore.setItemAsync("info_nalog", info_nalog);
 
                   let response = await request_data(info_nalog);
-                  router.push({
-                    pathname: "main",
-                    params: {
-                      info_data: JSON.stringify(response),
-                      is_connected: true,
-                      is_sactive: true,
-                    },
-                  });
+
+                  loaded_zustand_s_info_data(response);
+                  router.push("/(home)/main");
                 } else Alert.alert("Uslovi nisu ispunjeni !");
               }}
             >

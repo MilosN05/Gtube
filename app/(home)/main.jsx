@@ -18,8 +18,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { secure_fetch } from "../../scripts/secure_fetch";
 import { outer_store } from "../../store/store";
-import { useUser } from "../user_context";
 
 export async function download_save(url_audio, url_thumbnail, name_of_song) {
   const destination_audio = new Directory(Paths.document, "songs");
@@ -96,12 +96,17 @@ export default function HomeScreen() {
   let loaded_downloaded_md = outer_store((state) => state.downloaded_info);
   let loaded_download_md = outer_store((state) => state.set_downloaded_zus);
 
-  const { info_data, online_access, set_info_data } = useUser();
-  const parsed_data = JSON.parse(info_data);
+  // const { info_data, online_access, set_info_data } = useUser();
+  // const info_data = JSON.parse(info_data);
+  // let { online_access, is_connected, is_sactive, info_data } =
+  //   outer_store.getState();
+
+  let online_access = outer_store((state) => state.online_access);
+  let info_data = outer_store((state) => state.info_data);
 
   // console.log(loaded_ime)
   // console.log(loaded_downloaded_md)
-  // console.log(parsed_data)
+  // console.log(info_data)
 
   // console.log(loaded_bookmark[30])
 
@@ -113,9 +118,9 @@ export default function HomeScreen() {
   }
 
   // useEffect(()=> {
-  //   if (parsed_data)
-  //     for (let i=0;i<parsed_data.Bookmark.length;i++) {
-  //       liked_songs[parsed_data.Bookmark[i]] = true
+  //   if (info_data)
+  //     for (let i=0;i<info_data.Bookmark.length;i++) {
+  //       liked_songs[info_data.Bookmark[i]] = true
   //     }
   // }, [])
 
@@ -805,8 +810,8 @@ export default function HomeScreen() {
                         onPress={async () => {
                           let id_azapisa = eval(item.id);
                           // console.log(id_azapisa)
-                          let response = await fetch(
-                            `http://192.168.0.22:8000/bookmark/${parsed_data?.Ime}`,
+                          let response = await secure_fetch(
+                            `http://192.168.0.22:8000/bookmark/${info_data?.Ime}`,
                             {
                               method: "POST",
                               body: new URLSearchParams({
@@ -819,6 +824,7 @@ export default function HomeScreen() {
                             },
                           );
 
+                          if (response == -9999) return;
                           if (!response.ok) {
                             Alert.alert(
                               "Nešto nije u redu sa lajkovanjem pesme !",
@@ -897,7 +903,7 @@ export default function HomeScreen() {
 
                             // AsyncStorage.setItem()
                           } else if (response_text == -1) {
-                            // parsed_data.Bookmark[id_azapisa]=false
+                            // info_data.Bookmark[id_azapisa]=false
                             delete loaded_bookmark[id_azapisa];
 
                             const file_audio = new File(
@@ -940,7 +946,7 @@ export default function HomeScreen() {
                               loaded_download_md(meta_data_songs);
                             }
                           }
-                          // console.log(parsed_data)
+                          // console.log(info_data)
                           loaded_zustand_sid({ ...loaded_bookmark });
 
                           // console.log(id_azapisa)

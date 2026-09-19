@@ -23,6 +23,7 @@ import {
   AudioProState,
   useAudioPro,
 } from "react-native-audio-pro";
+import { secure_fetch } from "../../scripts/secure_fetch";
 import {
   load_shuffled,
   play_by_index,
@@ -136,7 +137,7 @@ export function player() {
     volume,
     error,
   } = useAudioPro();
-  const { id, online_access, bookmark_access } = useLocalSearchParams();
+  const { id, bookmark_access } = useLocalSearchParams();
   let [vrednost, setVrednost] = useState(0);
   let [podaci, ucitaj_podatke] = useState([]);
   let [lyrics_visible, set_lyrics_visible] = useState(false);
@@ -146,6 +147,7 @@ export function player() {
   let loaded_bookmark = outer_store((state) => state.Bookmark);
   let loaded_downloaded_md = outer_store((state) => state.downloaded_info);
   let loaded_ime = outer_store((state) => state.Ime);
+  let online_access = outer_store((state) => state.online_access);
   // console.log(useUser())
   // console.log(
   //   `BOOKMARK ACCESS: ${bookmark_access} || ONLINE ACCESS: ${online_access}`,
@@ -162,7 +164,7 @@ export function player() {
     // );
     // console.log(bookmark_access);
     if (!bookmark_access) get_data(ucitaj_podatke, id);
-    else get_data_bookmark(ucitaj_podatke, id, JSON.parse(online_access));
+    else get_data_bookmark(ucitaj_podatke, id, online_access);
   }, []);
 
   useEffect(() => {
@@ -171,18 +173,19 @@ export function player() {
         AudioPro.play(podaci[0]);
       else if (!playingTrack && podaci[0]) AudioPro.play(podaci[0]);
     } else {
-      let song_to_play = JSON.parse(online_access)
+      let song_to_play = online_access
         ? loaded_bookmark[id]
         : loaded_downloaded_md[id];
 
       // song_to_play.url = "http://192.168.0.22:8000" + song_to_play.url;
       // song_to_play.artwork = "http://192.168.0.22:8000" + song_to_play.artwork;
 
-      song_to_play = {
-        ...song_to_play,
-        url: "http://192.168.0.22:8000" + song_to_play.url,
-        artwork: "http://192.168.0.22:8000" + song_to_play.artwork,
-      };
+      if (online_access)
+        song_to_play = {
+          ...song_to_play,
+          url: "http://192.168.0.22:8000" + song_to_play.url,
+          artwork: "http://192.168.0.22:8000" + song_to_play.artwork,
+        };
 
       if (song_to_play && playingTrack && song_to_play.id != playingTrack.id)
         AudioPro.play(song_to_play);
@@ -841,9 +844,14 @@ export function player() {
           >
             <TouchableOpacity
               onPress={async () => {
+                if (!online_access) {
+                  Alert.alert("Nema internet veze ili sa serverom !");
+                  return;
+                }
+
                 let id_azapisa = eval(playingTrack.id);
                 // console.log(`${id_azapisa} | ${loaded_ime}`)
-                let response = await fetch(
+                let response = await secure_fetch(
                   `http://192.168.0.22:8000/bookmark/${loaded_ime}`,
                   {
                     method: "POST",
@@ -855,6 +863,8 @@ export function player() {
                     },
                   },
                 );
+
+                if (response == -9999) return;
 
                 if (!response.ok) {
                   Alert.alert("Nešto nije u redu sa lajkovanjem pesme !");

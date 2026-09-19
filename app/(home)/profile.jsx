@@ -5,15 +5,16 @@ import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useEffect, useState } from "react";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
-import { useUser } from "../user_context";
+import { secure_fetch } from "../../scripts/secure_fetch";
+import { outer_store } from "../../store/store";
 
 export default function profile() {
   const [image, set_image] = useState(null);
   const [refresh, set_refresh] = useState(false);
-  const { info_data, set_info_data, online_access } = useUser();
+  // const { info_data, set_info_data, online_access } = useUser();
 
-  const parsed_data = JSON.parse(info_data);
-  console.log(`${parsed_data?.Sifra}    ${parsed_data}`);
+  let online_access = outer_store((state) => state.online_access);
+  let info_data = outer_store((state) => state.info_data);
 
   // useEffect(()=> {
   //   set_refresh(true)
@@ -49,17 +50,21 @@ export default function profile() {
       name: image.assets[0].fileName,
     });
 
-    form_data.append("Email", parsed_data.Email);
-    form_data.append("Ime", parsed_data.Ime);
+    form_data.append("Email", info_data.Email);
+    form_data.append("Ime", info_data.Ime);
 
-    let response = await fetch("http://192.168.0.22:8000/unosProfilne/", {
-      method: "POST",
-      body: form_data,
-      headers: {
-        "Content-Type": "multipart/form-data",
+    let response = await secure_fetch(
+      "http://192.168.0.22:8000/unosProfilne/",
+      {
+        method: "POST",
+        body: form_data,
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       },
-    });
+    );
 
+    if (response == -9999) return;
     if (!response.ok) {
       Alert.alert("Neuspelo objavljivanje na server, pokušajte ponovo !");
       return;
@@ -73,7 +78,7 @@ export default function profile() {
     }
     console.log(response_json);
     set_info_data(
-      JSON.stringify({ ...parsed_data, Profilna: response_json.Profilna }),
+      JSON.stringify({ ...info_data, Profilna: response_json.Profilna }),
     );
   }
 
@@ -177,7 +182,7 @@ export default function profile() {
         <TouchableOpacity onPress={() => choose_image()}>
           <Image
             source={{
-              uri: `http://192.168.0.22:8000/media/${parsed_data?.Profilna}`,
+              uri: `http://192.168.0.22:8000/media/${info_data?.Profilna}`,
             }}
             style={{
               width: 130,
@@ -214,7 +219,7 @@ export default function profile() {
           <Text
             style={{ fontFamily: "Montserrat", color: "white", fontSize: 15 }}
           >
-            {parsed_data?.Ime}
+            {info_data?.Ime}
           </Text>
         </View>
         <View
@@ -234,7 +239,7 @@ export default function profile() {
           <Text
             style={{ fontFamily: "Montserrat", color: "white", fontSize: 15 }}
           >
-            +{parsed_data?.Telefon}
+            +{info_data?.Telefon}
           </Text>
         </View>
         <View
@@ -254,7 +259,7 @@ export default function profile() {
           <Text
             style={{ fontFamily: "Montserrat", color: "white", fontSize: 15 }}
           >
-            {parsed_data?.Email}
+            {info_data?.Email}
           </Text>
         </View>
         <View
@@ -274,7 +279,7 @@ export default function profile() {
           <Text
             style={{ fontFamily: "Montserrat", color: "white", fontSize: 15 }}
           >
-            {parsed_data?.DatumR}
+            {info_data?.DatumR}
           </Text>
         </View>
       </View>

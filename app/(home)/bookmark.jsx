@@ -14,16 +14,16 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useAudioPro } from "react-native-audio-pro";
+import { AudioPro, AudioProState, useAudioPro } from "react-native-audio-pro";
+import { secure_fetch } from "../../scripts/secure_fetch";
 import { outer_store } from "../../store/store";
-import { useUser } from "../user_context";
 import { download_save } from "./main";
 
 async function unlike_song() {
   let id_azapisa = eval(loaded_bookmark[visible_song_options].id);
   // console.log(id_azapisa)
-  let response = await fetch(
-    `http://192.168.0.22:8000/bookmark/${parsed_data?.Ime}`,
+  let response = await secure_fetch(
+    `http://192.168.0.22:8000/bookmark/${info_data?.Ime}`,
     {
       method: "POST",
       body: new URLSearchParams({
@@ -35,6 +35,8 @@ async function unlike_song() {
     },
   );
 
+  if (response == -9999) return;
+
   if (!response.ok) {
     Alert.alert("Nešto nije u redu sa lajkovanjem pesme !");
     return;
@@ -45,12 +47,13 @@ async function unlike_song() {
 export default function bookmark() {
   const [visible_song_options, set_visible_song_options] = useState(false);
 
-  const { info_data, online_access } = useUser();
+  let online_access = outer_store((state) => state.online_access);
+  let info_data = outer_store((state) => state.info_data);
+
   const { playingTrack } = useAudioPro();
-  const parsed_data = JSON.parse(info_data);
 
   // console.log(`OA FROM BOOKMARK: ${online_access}`);
-  // console.log(parsed_data)
+  // console.log(info_data)
   let loaded_zustand_sid = outer_store((state) => state.set_info_data_zus);
   let loaded_bookmark = outer_store((state) => state.Bookmark);
 
@@ -166,7 +169,7 @@ export default function bookmark() {
             <View style={{ display: "flex", height: "70%", gap: 10 }}>
               <TouchableOpacity
                 onPress={async () => {
-                  // parsed_data.Bookmark[id_azapisa]=false
+                  // info_data.Bookmark[id_azapisa]=false
 
                   const file_audio = new File(
                     Paths.document,
@@ -211,7 +214,7 @@ export default function bookmark() {
                   }
                   // delete loaded_bookmark[visible_song_options];
 
-                  // // console.log(parsed_data)
+                  // // console.log(info_data)
                   // loaded_zustand_sid({ ...loaded_bookmark });
                   set_visible_song_options(false);
                 }}
@@ -249,7 +252,7 @@ export default function bookmark() {
                   console.log(`CUVANJE: ${response_text}`);
 
                   if (response_text == -1) {
-                    // parsed_data.Bookmark[visible_song_options]=false
+                    // info_data.Bookmark[visible_song_options]=false
 
                     const file_audio = new File(
                       Paths.document,
@@ -470,7 +473,44 @@ export default function bookmark() {
                     alignItems: "center",
                   }}
                 >
-                  <Ionicons name="play" size={38} color={"white"}></Ionicons>
+                  {/* {console.log(AudioPro. AudioProState.PLAYING)} */}
+                  <Ionicons
+                    name={
+                      AudioPro.getState() != AudioProState.PLAYING
+                        ? "play"
+                        : "pause"
+                    }
+                    size={38}
+                    color={"white"}
+                    onPress={() => {
+                      if (
+                        playingTrack &&
+                        AudioPro.getState() == AudioProState.PAUSED
+                      )
+                        AudioPro.resume();
+                      else if (
+                        playingTrack &&
+                        AudioPro.getState() == AudioProState.PLAYING
+                      )
+                        AudioPro.pause();
+                      else if (!playingTrack) {
+                        let items = Object.values(
+                          online_access
+                            ? loaded_bookmark
+                            : loaded_downloaded_md || {},
+                        );
+                        if (items.length == 0) return;
+
+                        router.push({
+                          pathname: "/(mplay)/audio",
+                          params: {
+                            id: items[0].id,
+                            bookmark_access: true,
+                          },
+                        });
+                      }
+                    }}
+                  ></Ionicons>
                 </View>
               </TouchableOpacity>
             </View>
@@ -558,7 +598,6 @@ export default function bookmark() {
                         params: {
                           id: item.id,
                           bookmark_access: true,
-                          online_access: online_access,
                         },
                       });
                     }}

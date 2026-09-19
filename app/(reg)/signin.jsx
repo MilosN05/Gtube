@@ -6,15 +6,19 @@ import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useState } from "react";
 import {
-    Alert,
-    Button,
-    Modal,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Button,
+  Modal,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { secure_fetch } from "../../scripts/secure_fetch";
+import { outer_store } from "../../store/store";
+
+let loaded_zustand_s_info_data = outer_store.getState().set_info_data_zus;
 
 async function log_in(email, sifra, objekat_r) {
   let state = await NetInfo.fetch();
@@ -47,11 +51,12 @@ async function log_in(email, sifra, objekat_r) {
 }
 
 export async function request_data(result) {
-  let response = await fetch("http://192.168.0.22:8000/nalog/", {
+  let response = await secure_fetch("http://192.168.0.22:8000/nalog/", {
     method: "POST",
     body: result,
   });
 
+  if (response == -9999) return;
   if (!response.ok) {
     Alert.alert("Nešto nije kako treba, restartuje aplikaciju !");
     return;
@@ -297,14 +302,16 @@ export default function signIn() {
 
                     let response = await request_data(info_nalog);
                     // console.log(`Ucitani podaci o korisniku: ${response}`)
-                    router.push({
-                      pathname: "main",
-                      params: {
-                        info_data: JSON.stringify(response),
-                        is_connected: true,
-                        is_sactive: true,
-                      },
-                    });
+                    // router.push({
+                    //   pathname: "main",
+                    //   params: {
+                    //     info_data: JSON.stringify(response),
+                    //     is_connected: true,
+                    //     is_sactive: true,
+                    //   },
+                    // });
+                    loaded_zustand_s_info_data(response);
+                    router.push("/(home)/main");
                   }}
                 >
                   <Text
