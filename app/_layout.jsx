@@ -4,9 +4,6 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
-import { outer_store } from "../store/store.jsx";
-
-outer_store.getState();
 
 export const unstable_settings = {
   anchor: "(tabs)",

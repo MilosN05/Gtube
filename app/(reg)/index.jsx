@@ -3,7 +3,10 @@ import NetInfo from "@react-native-community/netinfo";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { Image, View } from "react-native";
-import { co_worker_main } from "../../online_access_check/network_service";
+import {
+  co_worker_main,
+  listeners,
+} from "../../online_access_check/network_service";
 import { setupAudio } from "../../setupAudio";
 import { outer_store } from "../../store/store";
 
@@ -33,6 +36,7 @@ async function is_logged() {
     if (state.isInternetReachable == false) {
       loaded_zustand_s_is_connected(false);
       loaded_zustand_s_is_sactive(null);
+      listeners();
     } else await co_worker_main(result);
 
     router.push("/(home)/main");

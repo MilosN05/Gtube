@@ -25,22 +25,42 @@ export async function download_save(url_audio, url_thumbnail, name_of_song) {
   const destination_audio = new Directory(Paths.document, "songs");
   const destination_thumbnail = new Directory(Paths.document, "thumbnails");
 
+  const paths_document_uri = Paths.document.info().uri;
+
   if (!destination_audio.exists) destination_audio.create();
   if (!destination_thumbnail.exists) destination_thumbnail.create();
   console.log(`PREUZIMANJE: ${url_audio} | ${url_thumbnail} `);
   try {
-    let audio = new File(Paths.document, "songs", name_of_song + ".mp3");
-    let thumbnail = new File(
-      Paths.document,
-      "thumbnails",
-      name_of_song + ".png",
-    );
+    // let audio = new File(Paths.document, "songs", name_of_song + ".mp3");
+    // let thumbnail = new File(
+    //   Paths.document,
+    //   "thumbnails",
+    //   name_of_song + ".png",
+    // );
     // console.log(`audio: ${audio.exists} | thumbnail: ${thumbnail.exists}`)
+    let encoded_name_of_song = encodeURIComponent(name_of_song);
 
-    if (!audio.exists)
-      await File.downloadFileAsync(url_audio, destination_audio);
-    if (!thumbnail.exists)
-      await File.downloadFileAsync(url_thumbnail, destination_thumbnail);
+    let audio = new File(
+      paths_document_uri + "songs/" + encoded_name_of_song + ".mp3",
+    );
+    let thumbnail = new File(
+      paths_document_uri + "thumbnails/" + encoded_name_of_song + ".png",
+    );
+
+    console.log(
+      `UCITAN AUDIO ZA SKIDANJE:${audio.info().uri} | POSTOJI audio: ${audio.exists} | POSTOJI THUMBNAIL: ${thumbnail.exists}`,
+    );
+    if (!audio.exists) {
+      let output1 = await File.downloadFileAsync(url_audio, destination_audio);
+      console.log(`URI PREUZETOG AUDIA: ${output1.info().uri}`);
+    }
+    if (!thumbnail.exists) {
+      let output2 = await File.downloadFileAsync(
+        url_thumbnail,
+        destination_thumbnail,
+      );
+      console.log(`URI PREUZETOG PNG-A: ${output2.info().uri}`);
+    }
 
     console.log(`PREUZETI MP3: ${destination_audio.list()}`);
     console.log(`PREUZETI PNG: ${destination_thumbnail.list()}`);
@@ -91,42 +111,23 @@ export default function HomeScreen() {
   let [loading, set_loading] = useState(false);
   let [refresh_val, pokreni_refresh] = useState(false);
 
-  let loaded_zustand_sid = outer_store((state) => state.set_info_data_zus);
+  let loaded_zustand_s_bookmark = outer_store(
+    (state) => state.set_bookmark_zus,
+  );
   let loaded_bookmark = outer_store((state) => state.Bookmark);
   let loaded_downloaded_md = outer_store((state) => state.downloaded_info);
   let loaded_download_md = outer_store((state) => state.set_downloaded_zus);
 
-  // const { info_data, online_access, set_info_data } = useUser();
-  // const info_data = JSON.parse(info_data);
-  // let { online_access, is_connected, is_sactive, info_data } =
-  //   outer_store.getState();
-
   let online_access = outer_store((state) => state.online_access);
   let info_data = outer_store((state) => state.info_data);
 
-  // console.log(loaded_ime)
-  // console.log(loaded_downloaded_md)
-  // console.log(info_data)
-
-  // console.log(loaded_bookmark[30])
-
-  let liked_songs = useRef({}).current;
+  console.log(`ULOGOVAN KORISNIK: ${info_data?.Ime}`);
+  // console.log(`TESTCINA: ${Paths.document.info().uri}`);
 
   function refresh() {
     pokreni_refresh(true);
     setTimeout(() => pokreni_refresh(false), 1000);
   }
-
-  // useEffect(()=> {
-  //   if (info_data)
-  //     for (let i=0;i<info_data.Bookmark.length;i++) {
-  //       liked_songs[info_data.Bookmark[i]] = true
-  //     }
-  // }, [])
-
-  // console.log(Paths.cache)
-  // console.log(Paths.document)
-  // console.log(new Directory(Paths.document, "test.mp3"))
 
   let Dot_loading = ({ style, container_style }) => {
     let scale1 = useRef(new Animated.Value(0.6)).current;
@@ -394,6 +395,7 @@ export default function HomeScreen() {
                     <TouchableOpacity
                       style={styles.coverShadow}
                       onPress={() => {
+                        globalThis.bookmark_access = false;
                         router.push({
                           pathname: "/(mplay)/audio",
                           params: { id: item.id },
@@ -482,6 +484,8 @@ export default function HomeScreen() {
                       <TouchableOpacity
                         style={styles.coverShadow}
                         onPress={() => {
+                          globalThis.bookmark_access = false;
+
                           router.push({
                             pathname: "/(mplay)/audio",
                             params: { id: item.id },
@@ -671,6 +675,8 @@ export default function HomeScreen() {
                 <View style={{ height: "145", width: "140", gap: 10 }}>
                   <TouchableOpacity
                     onPress={() => {
+                      globalThis.bookmark_access = false;
+
                       router.push({
                         pathname: "/(mplay)/audio",
                         params: { id: item.id },
@@ -756,6 +762,8 @@ export default function HomeScreen() {
                 <View style={{ display: "flex", flexDirection: "row" }}>
                   <TouchableOpacity
                     onPress={() => {
+                      globalThis.bookmark_access = false;
+
                       router.push({
                         pathname: "/(mplay)/audio",
                         params: { id: item.id },
@@ -809,7 +817,7 @@ export default function HomeScreen() {
                       <TouchableOpacity
                         onPress={async () => {
                           let id_azapisa = eval(item.id);
-                          // console.log(id_azapisa)
+                          console.log(`KORISNIK KOJI SKIDA: ${info_data?.Ime}`);
                           let response = await secure_fetch(
                             `http://192.168.0.22:8000/bookmark/${info_data?.Ime}`,
                             {
@@ -842,6 +850,10 @@ export default function HomeScreen() {
                           //drugog objašnjenja nemam, iako je on primećivao promene, nije hteo da ih primeti u okviru komponenti, nemam komentar
                           // set_like(false)
 
+                          let paths_document_uri = Paths.document.info().uri;
+                          let encoded_name_of_song = encodeURIComponent(
+                            item.title,
+                          );
                           if (response_text == 1) {
                             loaded_bookmark[id_azapisa] = {
                               ...item,
@@ -855,21 +867,34 @@ export default function HomeScreen() {
                               ),
                             };
 
+                            console.log(`URL: ${item.url}`);
                             await download_save(
                               item.url,
                               item.artwork,
                               item.title,
                             );
 
+                            // const file_audio = new File(
+                            //   Paths.document,
+                            //   "songs",
+                            //   item.title + ".mp3",
+                            // );
+                            // const file_thumbnail = new File(
+                            //   Paths.document,
+                            //   "thumbnails",
+                            //   item.title + ".png",
+                            // );
                             const file_audio = new File(
-                              Paths.document,
-                              "songs",
-                              item.title + ".mp3",
+                              paths_document_uri +
+                                "songs/" +
+                                encoded_name_of_song +
+                                ".mp3",
                             );
                             const file_thumbnail = new File(
-                              Paths.document,
-                              "thumbnails",
-                              item.title + ".png",
+                              paths_document_uri +
+                                "thumbnails/" +
+                                encoded_name_of_song +
+                                ".png",
                             );
 
                             if (file_audio.exists && file_thumbnail.exists) {
@@ -906,15 +931,27 @@ export default function HomeScreen() {
                             // info_data.Bookmark[id_azapisa]=false
                             delete loaded_bookmark[id_azapisa];
 
+                            // const file_audio = new File(
+                            //   Paths.document,
+                            //   "songs",
+                            //   item.title + ".mp3",
+                            // );
+                            // const file_thumbnail = new File(
+                            //   Paths.document,
+                            //   "thumbnails",
+                            //   item.title + ".png",
+                            // );
                             const file_audio = new File(
-                              Paths.document,
-                              "songs",
-                              item.title + ".mp3",
+                              paths_document_uri +
+                                "songs/" +
+                                encoded_name_of_song +
+                                ".mp3",
                             );
                             const file_thumbnail = new File(
-                              Paths.document,
-                              "thumbnails",
-                              item.title + ".png",
+                              paths_document_uri +
+                                "thumbnails/" +
+                                encoded_name_of_song +
+                                ".png",
                             );
 
                             if (file_audio.exists) {
@@ -947,7 +984,7 @@ export default function HomeScreen() {
                             }
                           }
                           // console.log(info_data)
-                          loaded_zustand_sid({ ...loaded_bookmark });
+                          loaded_zustand_s_bookmark({ ...loaded_bookmark });
 
                           // console.log(id_azapisa)
                         }}

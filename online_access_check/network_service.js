@@ -22,7 +22,7 @@ async function check_server() {
   }
 }
 
-async function listeners() {
+export async function listeners() {
   if (!globalThis.loaded_interval) {
     check_server();
     setInterval(check_server, 30000);

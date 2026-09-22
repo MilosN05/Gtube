@@ -21,7 +21,6 @@ export default function uploadF() {
   const [preuzimanje_u_toku, set_preuzimanje] = useState(false);
 
   let online_access = outer_store((state) => state.online_access);
-  let info_data = outer_store((state) => state.info_data);
 
   const progressRef = useRef(null);
 

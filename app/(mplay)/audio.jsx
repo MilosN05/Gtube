@@ -17,15 +17,9 @@ import {
 } from "react-native";
 
 import Slider from "@react-native-community/slider";
-import {
-  AudioPro,
-  AudioProContentType,
-  AudioProState,
-  useAudioPro,
-} from "react-native-audio-pro";
+import { AudioPro, AudioProState, useAudioPro } from "react-native-audio-pro";
 import { secure_fetch } from "../../scripts/secure_fetch";
 import {
-  load_shuffled,
   play_by_index,
   play_next,
   play_previous,
@@ -33,31 +27,7 @@ import {
 } from "../../setupAudio";
 import { outer_store } from "../../store/store";
 
-async function download_save(url_audio, url_thumbnail, name_of_song) {
-  const destination_audio = new Directory(Paths.document, "songs");
-  const destination_thumbnail = new Directory(Paths.document, "thumbnails");
-
-  if (!destination_audio.exists) destination_audio.create();
-  if (!destination_thumbnail.exists) destination_thumbnail.create();
-  console.log(`PREUZIMANJE: ${url_audio} | ${url_thumbnail} `);
-  try {
-    let audio = new File(Paths.document, "songs", name_of_song + ".mp3");
-    let thumbnail = new File(
-      Paths.document,
-      "thumbnails",
-      name_of_song + ".png",
-    );
-    // console.log(`audio: ${audio.exists} | thumbnail: ${thumbnail.exists}`)
-
-    if (!audio.exists)
-      await File.downloadFileAsync(url_audio, destination_audio);
-    if (!thumbnail.exists)
-      await File.downloadFileAsync(url_thumbnail, destination_thumbnail);
-  } catch (error) {
-    console.error(error);
-    Alert.alert(error);
-  }
-}
+import { download_save } from "../(home)/main";
 
 async function get_data(funkcija, id) {
   try {
@@ -127,48 +97,68 @@ function to_seconds(ms) {
   return sekunde >= 10 ? `${minute}:${sekunde}` : `${minute}:0${sekunde}`;
 }
 
+export const toggleIcon = (opacity) => {
+  // opacity.stopAnimation();
+  Animated.sequence([
+    Animated.timing(opacity, {
+      toValue: 0,
+      duration: 100,
+      useNativeDriver: true,
+    }),
+    Animated.timing(opacity, {
+      toValue: 1,
+      duration: 100,
+      useNativeDriver: true,
+    }),
+  ]).start();
+};
+export async function switch_song(opacity2) {
+  Animated.timing(opacity2, {
+    toValue: 0,
+    duration: 150,
+    useNativeDriver: true,
+  }).start(() => {
+    // setCurrentSong(newSong);
+
+    Animated.timing(opacity2, {
+      toValue: 1,
+      duration: 150,
+      useNativeDriver: true,
+    }).start();
+  });
+}
+
 export function player() {
-  const {
-    state,
-    position,
-    duration,
-    playingTrack,
-    playbackSpeed,
-    volume,
-    error,
-  } = useAudioPro();
-  const { id, bookmark_access } = useLocalSearchParams();
-  let [vrednost, setVrednost] = useState(0);
+  const { position, duration, playingTrack } = useAudioPro();
+  const { id } = useLocalSearchParams();
   let [podaci, ucitaj_podatke] = useState([]);
   let [lyrics_visible, set_lyrics_visible] = useState(false);
   let [list_of_songs_visible, set_ls_visible] = useState(false);
+  let [secured_position, set_secured_position] = useState(null);
 
   let loaded_zustand_sid = outer_store((state) => state.set_info_data_zus);
+  let loaded_zustand_s_bookmark = outer_store(
+    (state) => state.set_bookmark_zus,
+  );
+
+  let loaded_zustand_s_shuffled = outer_store(
+    (state) => state.set_shuffled_play,
+  );
+
   let loaded_bookmark = outer_store((state) => state.Bookmark);
   let loaded_downloaded_md = outer_store((state) => state.downloaded_info);
-  let loaded_ime = outer_store((state) => state.Ime);
+  let info_data = outer_store((state) => state.info_data);
   let online_access = outer_store((state) => state.online_access);
-  // console.log(useUser())
-  // console.log(
-  //   `BOOKMARK ACCESS: ${bookmark_access} || ONLINE ACCESS: ${online_access}`,
-  // );
-  // console.log("audio screen");
-  // console.log(playingTrack)
+  let shuffled_play = outer_store((state) => state.shuffled_play);
+
   useEffect(() => {
-    AudioPro.configure({
-      contentType: AudioProContentType.MUSIC,
-      debug: __DEV__,
-    });
-    // console.log(
-    //   `PRIMLJENO: ${id} type: ${typeof id} || PRIMLJENO: ${online_access}`,
-    // );
-    // console.log(bookmark_access);
-    if (!bookmark_access) get_data(ucitaj_podatke, id);
+    if (!globalThis.bookmark_access) get_data(ucitaj_podatke, id);
     else get_data_bookmark(ucitaj_podatke, id, online_access);
   }, []);
 
+  console.log(`test iz audio.jsx`);
   useEffect(() => {
-    if (!bookmark_access) {
+    if (!globalThis.bookmark_access) {
       if (podaci[0] && playingTrack && podaci[0].id != playingTrack.id)
         AudioPro.play(podaci[0]);
       else if (!playingTrack && podaci[0]) AudioPro.play(podaci[0]);
@@ -196,43 +186,18 @@ export function player() {
   useEffect(() => {
     if (playingTrack) {
       set_lyrics_visible(false);
-      switch_song();
+      switch_song(opacity2);
     }
   }, [playingTrack]);
 
+  useEffect(() => {
+    console.log(`ID: ${playingTrack?.id} | ${position}`);
+  }, [playingTrack?.id]);
+
   const opacity = useRef(new Animated.Value(1)).current;
-
-  const toggleIcon = () => {
-    Animated.sequence([
-      Animated.timing(opacity, {
-        toValue: 0,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
   const opacity2 = useRef(new Animated.Value(1)).current;
-  async function switch_song() {
-    Animated.timing(opacity2, {
-      toValue: 0,
-      duration: 150,
-      useNativeDriver: true,
-    }).start(() => {
-      // setCurrentSong(newSong);
 
-      Animated.timing(opacity2, {
-        toValue: 1,
-        duration: 150,
-        useNativeDriver: true,
-      }).start();
-    });
-  }
+  // console.log(opacity);
 
   return (
     <LinearGradient
@@ -342,33 +307,48 @@ export function player() {
               flex: 1,
               width: "100%",
               gap: 16,
-              paddingLeft: 25,
-              paddingRight: 25,
             }}
           >
-            <Text
-              style={{
-                color: "white",
-                fontFamily: "MontserratBold",
-                fontSize: 20,
-              }}
-            >
-              Sledi
-            </Text>
+            <View style={{ width: "100%", paddingLeft: 25, paddingRight: 25 }}>
+              <Text
+                style={{
+                  color: "white",
+                  fontFamily: "MontserratBold",
+                  fontSize: 20,
+                }}
+              >
+                Sledi
+              </Text>
+            </View>
             <View style={{ flex: 1 }}>
-              {/* <LinearGradient colors={["#c55d31","transparent"]} 
-              style={{
-              position:"absolute",
-              zIndex: 100,
-              left: 0,
-              top:0,
-              right: 0,
-              height: 70,
-              // pointerEvents: "none"
-              }} /> */}
+              <LinearGradient
+                colors={["#b7562c", "transparent"]}
+                style={{
+                  position: "absolute",
+                  zIndex: 100,
+                  left: 0,
+                  top: 0,
+                  right: 0,
+                  height: 20,
+                  // pointerEvents: "none"
+                }}
+              />
+              {/* <LinearGradient
+                colors={["#111425", "transparent"]}
+                style={{
+                  position: "absolute",
+                  zIndex: 100,
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 20,
+                  pointerEvents: "none",
+                }}
+              /> */}
 
               <FlatList
                 data={podaci}
+                style={{ paddingLeft: 25, paddingRight: 25 }}
                 renderItem={({ item, index }) => {
                   let is_current = playingTrack?.id == item.id;
                   return (
@@ -379,6 +359,11 @@ export function player() {
                         alignItems: "center",
                         gap: 15,
                         width: "100%",
+                        overflow: "hidden",
+                        borderTopRightRadius: 10,
+                        borderBottomRightRadius: 10,
+                        borderTopLeftRadius: 4,
+                        borderBottomLeftRadius: 4,
                         backgroundColor: is_current
                           ? "rgba(255,255,255,0.08)"
                           : "transparent",
@@ -443,6 +428,19 @@ export function player() {
                     height: 70,
                     // pointerEvents: "none"
                     }} />  */}
+
+              <LinearGradient
+                colors={["transparent", "#6f492e"]}
+                style={{
+                  position: "absolute",
+                  zIndex: 100,
+                  left: 0,
+                  bottom: 0,
+                  right: 0,
+                  height: 20,
+                  // pointerEvents: "none"
+                }}
+              />
             </View>
           </View>
 
@@ -465,7 +463,7 @@ export function player() {
                 }}
                 minimumValue={0}
                 maximumValue={duration}
-                value={position}
+                value={position == duration || position == 0 ? 0 : position}
                 onSlidingComplete={AudioPro.seekTo}
                 minimumTrackTintColor="#ff9f43"
                 maximumTrackTintColor="gray"
@@ -485,7 +483,9 @@ export function player() {
                     fontSize: 15,
                   }}
                 >
-                  {to_seconds(position)}
+                  {to_seconds(
+                    position == duration || position == 0 ? 0 : position,
+                  )}
                 </Text>
                 <Text
                   style={{
@@ -513,7 +513,8 @@ export function player() {
                   color={"white"}
                   size={30}
                   onPress={() => {
-                    toggleIcon();
+                    console.log(opacity);
+                    toggleIcon(opacity);
                     if (AudioPro.getState() == AudioProState.PLAYING)
                       AudioPro.pause();
                     else {
@@ -681,7 +682,7 @@ export function player() {
                   }}
                   minimumValue={0}
                   maximumValue={duration}
-                  value={position}
+                  value={position == duration || position == 0 ? 0 : position}
                   onSlidingComplete={AudioPro.seekTo}
                   minimumTrackTintColor="#ff9f43"
                   maximumTrackTintColor="gray"
@@ -701,7 +702,9 @@ export function player() {
                       fontSize: 15,
                     }}
                   >
-                    {to_seconds(position)}
+                    {to_seconds(
+                      position == duration || position == 0 ? 0 : position,
+                    )}
                   </Text>
                   <Text
                     style={{
@@ -729,7 +732,8 @@ export function player() {
                     color={"white"}
                     size={30}
                     onPress={() => {
-                      toggleIcon();
+                      console.log(opacity);
+                      toggleIcon(opacity);
                       if (AudioPro.getState() == AudioProState.PLAYING)
                         AudioPro.pause();
                       else {
@@ -850,9 +854,9 @@ export function player() {
                 }
 
                 let id_azapisa = eval(playingTrack.id);
-                // console.log(`${id_azapisa} | ${loaded_ime}`)
+                // console.log(`${id_azapisa} | ${info_data?.Ime}`)
                 let response = await secure_fetch(
-                  `http://192.168.0.22:8000/bookmark/${loaded_ime}`,
+                  `http://192.168.0.22:8000/bookmark/${info_data?.Ime}`,
                   {
                     method: "POST",
                     body: new URLSearchParams({
@@ -881,6 +885,11 @@ export function player() {
                 //drugog objašnjenja nemam, iako je on primećivao promene, nije hteo da ih primeti u okviru komponenti, nemam komentar
                 // set_like(false)
 
+                let paths_document_uri = Paths.document.info().uri;
+                let encoded_name_of_song = encodeURIComponent(
+                  playingTrack.title,
+                );
+
                 if (response_text == 1) {
                   loaded_bookmark[playingTrack.id] = {
                     artist: playingTrack.artist,
@@ -904,14 +913,16 @@ export function player() {
                   );
 
                   const file_audio = new File(
-                    Paths.document,
-                    "songs",
-                    playingTrack.title + ".mp3",
+                    paths_document_uri +
+                      "songs/" +
+                      encoded_name_of_song +
+                      ".mp3",
                   );
                   const file_thumbnail = new File(
-                    Paths.document,
-                    "thumbnails",
-                    playingTrack.title + ".png",
+                    paths_document_uri +
+                      "thumbnails/" +
+                      encoded_name_of_song +
+                      ".png",
                   );
 
                   if (file_audio.exists && file_thumbnail.exists)
@@ -927,14 +938,16 @@ export function player() {
                   delete loaded_bookmark[playingTrack.id];
 
                   const file_audio = new File(
-                    Paths.document,
-                    "songs",
-                    playingTrack.title + ".mp3",
+                    paths_document_uri +
+                      "songs/" +
+                      encoded_name_of_song +
+                      ".mp3",
                   );
                   const file_thumbnail = new File(
-                    Paths.document,
-                    "thumbnails",
-                    playingTrack.title + ".png",
+                    paths_document_uri +
+                      "thumbnails/" +
+                      encoded_name_of_song +
+                      ".png",
                   );
 
                   if (file_audio.exists) file_audio.delete();
@@ -942,7 +955,7 @@ export function player() {
                   if (file_thumbnail.exists) file_thumbnail.delete();
                 }
                 // console.log(parsed_data)
-                loaded_zustand_sid({ ...loaded_bookmark });
+                loaded_zustand_s_bookmark({ ...loaded_bookmark });
 
                 // console.log(id_azapisa)
               }}
@@ -1033,7 +1046,7 @@ export function player() {
             style={styles.slider}
             minimumValue={0}
             maximumValue={duration}
-            value={position}
+            value={position == duration || position == 0 ? 0 : position}
             onSlidingComplete={AudioPro.seekTo}
             minimumTrackTintColor="#ff9f43"
             maximumTrackTintColor="gray"
@@ -1052,7 +1065,7 @@ export function player() {
             <Text
               style={{ fontFamily: "Montserrat", color: "white", fontSize: 15 }}
             >
-              {to_seconds(position)}
+              {to_seconds(position == duration || position == 0 ? 0 : position)}
             </Text>
             <Text
               style={{ fontFamily: "Montserrat", color: "white", fontSize: 15 }}
@@ -1106,7 +1119,8 @@ export function player() {
                   color={"white"}
                   size={30}
                   onPress={() => {
-                    toggleIcon();
+                    console.log(opacity);
+                    toggleIcon(opacity);
                     if (AudioPro.getState() == AudioProState.PLAYING)
                       AudioPro.pause();
                     else {
@@ -1125,12 +1139,12 @@ export function player() {
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => {
-                load_shuffled(true);
+                loaded_zustand_s_shuffled(!shuffled_play);
               }}
             >
               <Ionicons
                 name="shuffle-outline"
-                color={"white"}
+                color={shuffled_play ? "white" : "#989797"}
                 size={30}
               ></Ionicons>
             </TouchableOpacity>

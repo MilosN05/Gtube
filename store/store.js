@@ -5,10 +5,11 @@ export const outer_store = create((set) => ({
   // Ime: null,
   info_data: null,
   Bookmark: {},
-  downloaded_info: null,
+  downloaded_info: {},
   is_connected: false,
   is_sactive: null,
   online_access: false,
+  shuffled_play: false,
 
   set_bookmark_zus: (new_bookmark) => set({ Bookmark: new_bookmark }),
   set_info_data_zus: (new_info_data) => set({ info_data: new_info_data }),
@@ -36,6 +37,8 @@ export const outer_store = create((set) => ({
         online_access: new_status && state.is_connected,
       };
     }),
+
+  set_shuffled_play: (new_status) => set({ shuffled_play: new_status }),
 }));
 
 let loaded_zustand_sbookmark = outer_store.getState().set_bookmark_zus;

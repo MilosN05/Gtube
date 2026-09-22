@@ -7,9 +7,10 @@ import * as SecureStore from "expo-secure-store";
 import { useRef, useState } from "react";
 import { Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { outer_store } from "../../store/store";
-import { request_data } from "./signin";
 
 let loaded_zustand_s_info_data = outer_store.getState().set_info_data_zus;
+let loaded_zustand_s_is_connected = outer_store.getState().set_is_connected_zus;
+let loaded_zustand_s_is_sactive = outer_store.getState().set_is_active_zus;
 
 async function register(ime, email, telefon, datumr, sifra, objekat_r) {
   let state = await NetInfo.fetch();
@@ -18,6 +19,8 @@ async function register(ime, email, telefon, datumr, sifra, objekat_r) {
     Alert.alert("Nema aktivne internet konekcije !");
     return;
   }
+  loaded_zustand_s_is_connected(true);
+
   try {
     const response = await fetch("http://192.168.0.22:8000/registracija/", {
       method: "POST",
@@ -39,6 +42,8 @@ async function register(ime, email, telefon, datumr, sifra, objekat_r) {
 
     if (result.error) objekat_r.error = result.error;
   } catch {
+    loaded_zustand_s_is_sactive(false);
+
     objekat_r.error = "Server je offline !";
   }
 
@@ -391,9 +396,13 @@ export default function signIn() {
 
                   SecureStore.setItemAsync("info_nalog", info_nalog);
 
-                  let response = await request_data(info_nalog);
-
-                  loaded_zustand_s_info_data(response);
+                  try {
+                    await co_worker_main(info_nalog);
+                    router.push("/(home)/main");
+                  } catch (e) {
+                    loaded_zustand_s_is_sactive(false);
+                    Alert.alert(`Server neaktivan !`);
+                  }
                   router.push("/(home)/main");
                 } else Alert.alert("Uslovi nisu ispunjeni !");
               }}

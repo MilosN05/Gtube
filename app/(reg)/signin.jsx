@@ -15,10 +15,12 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { secure_fetch } from "../../scripts/secure_fetch";
+import { co_worker_main } from "../../online_access_check/network_service";
 import { outer_store } from "../../store/store";
 
 let loaded_zustand_s_info_data = outer_store.getState().set_info_data_zus;
+let loaded_zustand_s_is_connected = outer_store.getState().set_is_connected_zus;
+let loaded_zustand_s_is_sactive = outer_store.getState().set_is_active_zus;
 
 async function log_in(email, sifra, objekat_r) {
   let state = await NetInfo.fetch();
@@ -27,6 +29,8 @@ async function log_in(email, sifra, objekat_r) {
     Alert.alert("Nema aktivne internet konekcije !");
     return;
   }
+
+  loaded_zustand_s_is_connected(true);
   try {
     const response = await fetch("http://192.168.0.22:8000/logovanje/", {
       method: "POST",
@@ -46,17 +50,17 @@ async function log_in(email, sifra, objekat_r) {
     if (result == 0) objekat_r.error = 2;
     return;
   } catch {
+    loaded_zustand_s_is_sactive(false);
     objekat_r.error = "Server je offline !";
   }
 }
 
 export async function request_data(result) {
-  let response = await secure_fetch("http://192.168.0.22:8000/nalog/", {
+  let response = await fetch("http://192.168.0.22:8000/nalog/", {
     method: "POST",
     body: result,
   });
 
-  if (response == -9999) return;
   if (!response.ok) {
     Alert.alert("Nešto nije kako treba, restartuje aplikaciju !");
     return;
@@ -300,18 +304,13 @@ export default function signIn() {
                     if (isChecked)
                       SecureStore.setItemAsync("info_nalog", info_nalog);
 
-                    let response = await request_data(info_nalog);
-                    // console.log(`Ucitani podaci o korisniku: ${response}`)
-                    // router.push({
-                    //   pathname: "main",
-                    //   params: {
-                    //     info_data: JSON.stringify(response),
-                    //     is_connected: true,
-                    //     is_sactive: true,
-                    //   },
-                    // });
-                    loaded_zustand_s_info_data(response);
-                    router.push("/(home)/main");
+                    try {
+                      await co_worker_main(info_nalog);
+                      router.push("/(home)/main");
+                    } catch (e) {
+                      loaded_zustand_s_is_sactive(false);
+                      Alert.alert(`Server neaktivan !`);
+                    }
                   }}
                 >
                   <Text

@@ -4,9 +4,10 @@ import { File, Paths } from "expo-file-system";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Alert,
+  Animated,
   FlatList,
   Modal,
   StyleSheet,
@@ -15,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { AudioPro, AudioProState, useAudioPro } from "react-native-audio-pro";
+import { toggleIcon } from "../(mplay)/audio";
 import { secure_fetch } from "../../scripts/secure_fetch";
 import { outer_store } from "../../store/store";
 import { download_save } from "./main";
@@ -47,18 +49,20 @@ async function unlike_song() {
 export default function bookmark() {
   const [visible_song_options, set_visible_song_options] = useState(false);
 
-  let online_access = outer_store((state) => state.online_access);
-  let info_data = outer_store((state) => state.info_data);
-
   const { playingTrack } = useAudioPro();
 
-  // console.log(`OA FROM BOOKMARK: ${online_access}`);
-  // console.log(info_data)
   let loaded_zustand_sid = outer_store((state) => state.set_info_data_zus);
-  let loaded_bookmark = outer_store((state) => state.Bookmark);
-
-  let loaded_downloaded_md = outer_store((state) => state.downloaded_info);
   let loaded_download_md = outer_store((state) => state.set_downloaded_zus);
+  let loaded_zustand_s_shuffled = outer_store(
+    (state) => state.set_shuffled_play,
+  );
+
+  let loaded_bookmark = outer_store((state) => state.Bookmark);
+  let loaded_downloaded_md = outer_store((state) => state.downloaded_info);
+  let online_access = outer_store((state) => state.online_access);
+  let shuffled_play = outer_store((state) => state.shuffled_play);
+
+  let opacity = useRef(new Animated.Value(1)).current;
 
   return (
     <View style={{ display: "flex", flex: 1, backgroundColor: "#111425" }}>
@@ -396,6 +400,8 @@ export default function bookmark() {
                 }
 
                 let loaded_bookmark_keys_array = Object.keys(loaded_bookmark);
+                let paths_document_uri = Paths.document.info().uri;
+                let encoded_name_of_song = encodeURIComponent(item.title);
 
                 let meta_data_songs = JSON.parse(
                   await AsyncStorage.getItem("meta_data_songs"),
@@ -413,14 +419,16 @@ export default function bookmark() {
                     );
 
                     const file_audio = new File(
-                      Paths.document,
-                      "songs",
-                      loaded_bookmark[current_id].title + ".mp3",
+                      paths_document_uri +
+                        "songs/" +
+                        encoded_name_of_song +
+                        ".mp3",
                     );
                     const file_thumbnail = new File(
-                      Paths.document,
-                      "thumbnails",
-                      loaded_bookmark[current_id].title + ".png",
+                      paths_document_uri +
+                        "thumbnails/" +
+                        encoded_name_of_song +
+                        ".png",
                     );
 
                     if (file_audio.exists && file_thumbnail.exists) {
@@ -455,11 +463,15 @@ export default function bookmark() {
                 gap: 12,
               }}
             >
-              <TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  loaded_zustand_s_shuffled(!shuffled_play);
+                }}
+              >
                 <Ionicons
                   name="shuffle-sharp"
                   size={38}
-                  color={"#989797"}
+                  color={shuffled_play ? "white" : "#989797"}
                 ></Ionicons>
               </TouchableOpacity>
               <TouchableOpacity>
@@ -474,97 +486,152 @@ export default function bookmark() {
                   }}
                 >
                   {/* {console.log(AudioPro. AudioProState.PLAYING)} */}
-                  <Ionicons
-                    name={
-                      AudioPro.getState() != AudioProState.PLAYING
-                        ? "play"
-                        : "pause"
-                    }
-                    size={38}
-                    color={"white"}
-                    onPress={() => {
-                      if (
-                        playingTrack &&
-                        AudioPro.getState() == AudioProState.PAUSED
-                      )
-                        AudioPro.resume();
-                      else if (
-                        playingTrack &&
-                        AudioPro.getState() == AudioProState.PLAYING
-                      )
-                        AudioPro.pause();
-                      else if (!playingTrack) {
-                        let items = Object.values(
-                          online_access
-                            ? loaded_bookmark
-                            : loaded_downloaded_md || {},
-                        );
-                        if (items.length == 0) return;
-
-                        router.push({
-                          pathname: "/(mplay)/audio",
-                          params: {
-                            id: items[0].id,
-                            bookmark_access: true,
-                          },
-                        });
+                  <Animated.View style={{ opacity }}>
+                    <Ionicons
+                      name={
+                        AudioPro.getState() != AudioProState.PLAYING ||
+                        !bookmark_access
+                          ? "play"
+                          : "pause"
                       }
-                    }}
-                  ></Ionicons>
+                      size={38}
+                      color={"white"}
+                      onPress={() => {
+                        toggleIcon(opacity);
+                        // if (
+                        //   playingTrack &&
+                        //   AudioPro.getState() == AudioProState.PAUSED
+                        // )
+                        //   AudioPro.resume();
+                        // else if (
+                        //   playingTrack &&
+                        //   AudioPro.getState() == AudioProState.PLAYING
+                        // )
+                        //   AudioPro.pause();
+                        // else if (!playingTrack) {
+
+                        if (
+                          AudioPro.getState() == AudioProState.IDLE ||
+                          !globalThis.bookmark_access
+                        ) {
+                          let items = Object.values(
+                            online_access
+                              ? loaded_bookmark
+                              : loaded_downloaded_md,
+                          );
+
+                          console.log(`SAZVANA PESMA: ${items[0].title}`);
+
+                          globalThis.bookmark_access = true;
+                          if (items.length == 0) return;
+                          router.push({
+                            pathname: "/(mplay)/audio",
+                            params: {
+                              id: items[0].id,
+                              bookmark_access: true,
+                            },
+                          });
+                        } else if (
+                          AudioPro.getState() == AudioProState.PLAYING &&
+                          globalThis.bookmark_access
+                        )
+                          AudioPro.pause();
+                        else if (
+                          AudioPro.getState() == AudioProState.PAUSED &&
+                          globalThis.bookmark_access
+                        )
+                          AudioPro.resume();
+                      }}
+                    ></Ionicons>
+                  </Animated.View>
                 </View>
               </TouchableOpacity>
             </View>
           </View>
         </View>
-        <View style={{ height: "70%", gap: 23 }}>
-          <View
+        <View style={{ height: "70%", gap: 23, width: "100%" }}>
+          <LinearGradient
+            colors={["#111425", "transparent"]}
             style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 15,
-              width: "100%",
-              backgroundColor: "transparent",
+              position: "absolute",
+              zIndex: 100,
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 20,
+              pointerEvents: "none",
             }}
-          >
-            <TouchableOpacity
-              style={{
-                ...styles.coverShadow,
-                backgroundColor: "#3F4158",
-                width: 64,
-                height: 64,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                borderRadius: 4,
-              }}
-              onPress={() => {
-                router.navigate("/(home)/main");
-                // play_by_index(index)
-              }}
-            >
-              {/* <Image source={{uri:item.artwork}} style={{width:64, height:64, borderRadius:4}}></Image> */}
-              {/* <Image source={require("../../assets/images/icon.png")} style={{width:64, height:64, borderRadius:4}}></Image> */}
-              <Ionicons
-                name="add-outline"
-                size={48}
-                color={"#989797"}
-              ></Ionicons>
-            </TouchableOpacity>
-            <View style={{ flex: 1, justifyContent: "center" }}>
-              <Text
-                style={{ color: "white", fontFamily: "MontserratBold" }}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                Dodaj pesmu
-              </Text>
-            </View>
-          </View>
+          />
           <FlatList
             data={Object.values(
               online_access ? loaded_bookmark : loaded_downloaded_md || [],
             )}
+            style={{ overflow: "hidden" }}
+            ListEmptyComponent={
+              <View
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ fontFamily: "Montserrat", fontSize: 10 }}>
+                  Prazno
+                </Text>
+              </View>
+            }
+            ListHeaderComponent={
+              <View
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 15,
+                  width: "100%",
+                  backgroundColor: "transparent",
+                }}
+              >
+                <TouchableOpacity
+                  style={{
+                    ...styles.coverShadow,
+                    backgroundColor: "#3F4158",
+                    width: 64,
+                    height: 64,
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    borderRadius: 4,
+                    // overflow: "hidden",
+                  }}
+                  onPress={() => {
+                    router.navigate("/(home)/main");
+                    // play_by_index(index)
+                  }}
+                >
+                  <Ionicons
+                    name="add-outline"
+                    size={48}
+                    color={"#989797"}
+                  ></Ionicons>
+                </TouchableOpacity>
+                <View
+                  style={{
+                    flex: 1,
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text
+                    style={{ color: "white", fontFamily: "MontserratBold" }}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    Dodaj pesmu
+                  </Text>
+                </View>
+              </View>
+            }
             renderItem={({ item, index }) => {
               // let is_current = playingTrack?.id==item.id
               return (
@@ -573,8 +640,12 @@ export default function bookmark() {
                     display: "flex",
                     flexDirection: "row",
                     alignItems: "center",
+                    overflow: "hidden",
                     gap: 15,
-                    borderRadius: 10,
+                    borderTopRightRadius: 10,
+                    borderBottomRightRadius: 10,
+                    borderTopLeftRadius: 4,
+                    borderBottomLeftRadius: 4,
                     width: "100%",
                     backgroundColor:
                       playingTrack && playingTrack.id == item.id
@@ -592,12 +663,11 @@ export default function bookmark() {
                     style={styles.coverShadow}
                     onPress={() => {
                       // play_by_index(index)
-
+                      globalThis.bookmark_access = true;
                       router.push({
                         pathname: "/(mplay)/audio",
                         params: {
                           id: item.id,
-                          bookmark_access: true,
                         },
                       });
                     }}
@@ -688,6 +758,18 @@ export default function bookmark() {
 
 
 */}
+          <LinearGradient
+            colors={["transparent", "#111425"]}
+            style={{
+              position: "absolute",
+              zIndex: 100,
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 20,
+              pointerEvents: "none",
+            }}
+          />
         </View>
       </LinearGradient>
     </View>
