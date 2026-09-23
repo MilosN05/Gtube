@@ -7,7 +7,7 @@ import {
   co_worker_main,
   listeners,
 } from "../../online_access_check/network_service";
-import { setupAudio } from "../../setupAudio";
+import { setup_audio } from "../../setup_track_player";
 import { outer_store } from "../../store/store";
 
 let loaded_zustand_dsong = outer_store.getState().set_downloaded_zus;
@@ -43,7 +43,9 @@ async function is_logged() {
   }
 }
 export default function splashscreen() {
-  setupAudio();
+  // setupAudio();
+
+  setup_audio();
   setTimeout(() => {
     is_logged();
   }, 4000);

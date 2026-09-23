@@ -84,12 +84,12 @@ async function get_data(funkcija, page, search_params) {
     }
 
     const data = await response.json();
-    // data.artwork = "http://192.168.0.22:8000"+data.artwork
+    // data.artworkUrl = "http://192.168.0.22:8000"+data.artworkUrl
     // data.url= "http://192.168.0.22:8000"+data.url
     // data.url = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
 
     data.forEach((data) => {
-      data.artwork = "http://192.168.0.22:8000" + data.artwork;
+      data.artworkUrl = "http://192.168.0.22:8000" + data.artworkUrl;
       data.url = "http://192.168.0.22:8000" + data.url;
     });
     // console.log(data)
@@ -398,12 +398,12 @@ export default function HomeScreen() {
                         globalThis.bookmark_access = false;
                         router.push({
                           pathname: "/(mplay)/audio",
-                          params: { id: item.id },
+                          params: { id: item.mediaId },
                         });
                       }}
                     >
                       <Image
-                        source={{ uri: item.artwork }}
+                        source={{ uri: item.artworkUrl }}
                         style={{ width: 64, height: 64, borderRadius: 4 }}
                       ></Image>
                     </TouchableOpacity>
@@ -434,7 +434,7 @@ export default function HomeScreen() {
             {/* <Text style={{color:"white", fontFamily:"MontserratBold", fontSize:20, includeFontPadding:false}}>Trenutno pušteno</Text>
                    <View style={{display:"flex",flexDirection:"row", alignItems:"center",gap:15, width:"100%" }} >
                       <View style={styles.coverShadow}>
-                        <Image source={{uri:playingTrack?.artwork}} style={{width:64, height:64, borderRadius:4}}></Image>
+                        <Image source={{uri:playingTrack?.artworkUrl}} style={{width:64, height:64, borderRadius:4}}></Image>
                       </View>
                       <View style={{flex:1}}>
                         <Text style={{color:"#F6C26B", fontFamily:"MontserratBold", }} numberOfLines={1} ellipsizeMode='tail'>{playingTrack?.title}</Text>
@@ -467,7 +467,7 @@ export default function HomeScreen() {
               <FlatList
                 // data={podaci}
                 renderItem={({ item, index }) => {
-                  let is_current = playingTrack?.id == item.id;
+                  let is_current = playingTrack?.mediaId == item.mediaId;
                   return (
                     <View
                       style={{
@@ -488,12 +488,12 @@ export default function HomeScreen() {
 
                           router.push({
                             pathname: "/(mplay)/audio",
-                            params: { id: item.id },
+                            params: { id: item.mediaId },
                           });
                         }}
                       >
                         <Image
-                          source={{ uri: item.artwork }}
+                          source={{ uri: item.artworkUrl }}
                           style={{ width: 64, height: 64, borderRadius: 4 }}
                         ></Image>
                       </TouchableOpacity>
@@ -679,12 +679,12 @@ export default function HomeScreen() {
 
                       router.push({
                         pathname: "/(mplay)/audio",
-                        params: { id: item.id },
+                        params: { id: item.mediaId },
                       });
                     }}
                   >
                     <Image
-                      source={{ uri: item.artwork }}
+                      source={{ uri: item.artworkUrl }}
                       style={{ borderRadius: 10, width: "100%", height: 90 }}
                     ></Image>
                   </TouchableOpacity>
@@ -766,13 +766,13 @@ export default function HomeScreen() {
 
                       router.push({
                         pathname: "/(mplay)/audio",
-                        params: { id: item.id },
+                        params: { id: item.mediaId },
                       });
                     }}
                   >
                     <View style={{ height: 50, width: 70 }}>
                       <Image
-                        source={{ uri: item.artwork }}
+                        source={{ uri: item.artworkUrl }}
                         style={{
                           width: "auto",
                           height: "50",
@@ -816,7 +816,7 @@ export default function HomeScreen() {
                     >
                       <TouchableOpacity
                         onPress={async () => {
-                          let id_azapisa = eval(item.id);
+                          let id_azapisa = eval(item.mediaId);
                           console.log(`KORISNIK KOJI SKIDA: ${info_data?.Ime}`);
                           let response = await secure_fetch(
                             `http://192.168.0.22:8000/bookmark/${info_data?.Ime}`,
@@ -857,7 +857,7 @@ export default function HomeScreen() {
                           if (response_text == 1) {
                             loaded_bookmark[id_azapisa] = {
                               ...item,
-                              artwork: item.artwork.replace(
+                              artworkUrl: item.artworkUrl.replace(
                                 "http://192.168.0.22:8000",
                                 "",
                               ),
@@ -870,7 +870,7 @@ export default function HomeScreen() {
                             console.log(`URL: ${item.url}`);
                             await download_save(
                               item.url,
-                              item.artwork,
+                              item.artworkUrl,
                               item.title,
                             );
 
@@ -904,9 +904,9 @@ export default function HomeScreen() {
                               );
                               if (!meta_data_songs) meta_data_songs = {};
 
-                              meta_data_songs[item.id] = {
+                              meta_data_songs[item.mediaId] = {
                                 ...item,
-                                artwork: file_thumbnail.info().uri,
+                                artworkUrl: file_thumbnail.info().uri,
                                 url: file_audio.info().uri,
                               };
 
@@ -974,7 +974,7 @@ export default function HomeScreen() {
                               );
 
                               if (meta_data_songs)
-                                delete meta_data_songs[item.id];
+                                delete meta_data_songs[item.mediaId];
 
                               AsyncStorage.setItem(
                                 "meta_data_songs",
@@ -991,15 +991,17 @@ export default function HomeScreen() {
                       >
                         <Ionicons
                           name={
-                            loaded_bookmark?.[item.id]
+                            loaded_bookmark?.[item.mediaId]
                               ? "heart"
                               : "heart-outline"
                           }
                           size={32}
-                          color={loaded_bookmark?.[item.id] ? "red" : "white"}
+                          color={
+                            loaded_bookmark?.[item.mediaId] ? "red" : "white"
+                          }
                         ></Ionicons>
                       </TouchableOpacity>
-                      {/* {console.log(liked_songs[item.id])} */}
+                      {/* {console.log(liked_songs[item.mediaId])} */}
                       {/* <TouchableOpacity><Ionicons name="ellipsis-vertical-outline" size={32} color={"white"}></Ionicons></TouchableOpacity> */}
                     </View>
                   </View>

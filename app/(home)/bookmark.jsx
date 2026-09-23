@@ -1,5 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import TrackPlayer, {
+  PlaybackState,
+  useActiveMediaItem,
+  useIsPlaying,
+} from "@rntp/player";
 import { File, Paths } from "expo-file-system";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -15,14 +20,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { AudioPro, AudioProState, useAudioPro } from "react-native-audio-pro";
 import { toggleIcon } from "../(mplay)/audio";
 import { secure_fetch } from "../../scripts/secure_fetch";
 import { outer_store } from "../../store/store";
 import { download_save } from "./main";
 
 async function unlike_song() {
-  let id_azapisa = eval(loaded_bookmark[visible_song_options].id);
+  let id_azapisa = eval(loaded_bookmark[visible_song_options].mediaId);
   // console.log(id_azapisa)
   let response = await secure_fetch(
     `http://192.168.0.22:8000/bookmark/${info_data?.Ime}`,
@@ -49,7 +53,9 @@ async function unlike_song() {
 export default function bookmark() {
   const [visible_song_options, set_visible_song_options] = useState(false);
 
-  const { playingTrack } = useAudioPro();
+  // const { playingTrack } = useAudioPro();
+  const currently_played = useIsPlaying();
+  const playingTrack = useActiveMediaItem();
 
   let loaded_zustand_sid = outer_store((state) => state.set_info_data_zus);
   let loaded_download_md = outer_store((state) => state.set_downloaded_zus);
@@ -116,8 +122,9 @@ export default function bookmark() {
                   <Image
                     source={{
                       uri: online_access
-                        ? `http://192.168.0.22:8000${loaded_bookmark?.[visible_song_options]?.artwork}`
-                        : loaded_downloaded_md?.[visible_song_options]?.artwork,
+                        ? `http://192.168.0.22:8000${loaded_bookmark?.[visible_song_options]?.artworkUrl}`
+                        : loaded_downloaded_md?.[visible_song_options]
+                            ?.artworkUrl,
                     }}
                     style={{ width: 64, height: 64, borderRadius: 4 }}
                   ></Image>
@@ -157,7 +164,7 @@ export default function bookmark() {
                     </Text>
                   </View>
                   {/* <TouchableOpacity
-                    onPress={() => set_visible_song_options(item.id)}
+                    onPress={() => set_visible_song_options(item.mediaId)}
                   >
                     <Ionicons
                       name="ellipsis-horizontal"
@@ -207,7 +214,7 @@ export default function bookmark() {
 
                     if (meta_data_songs)
                       delete meta_data_songs[
-                        loaded_bookmark[visible_song_options].id
+                        loaded_bookmark[visible_song_options].mediaId
                       ];
 
                     AsyncStorage.setItem(
@@ -290,7 +297,7 @@ export default function bookmark() {
 
                       if (meta_data_songs)
                         delete meta_data_songs[
-                          loaded_bookmark[visible_song_options].id
+                          loaded_bookmark[visible_song_options].mediaId
                         ];
 
                       AsyncStorage.setItem(
@@ -414,7 +421,7 @@ export default function bookmark() {
                   if (!loaded_downloaded_md[current_id]) {
                     await download_save(
                       `http://192.168.0.22:8000${loaded_bookmark[current_id].url}`,
-                      `http://192.168.0.22:8000${loaded_bookmark[current_id].artwork}`,
+                      `http://192.168.0.22:8000${loaded_bookmark[current_id].artworkUrl}`,
                       loaded_bookmark[current_id].title,
                     );
 
@@ -466,6 +473,7 @@ export default function bookmark() {
               <TouchableOpacity
                 onPress={() => {
                   loaded_zustand_s_shuffled(!shuffled_play);
+                  TrackPlayer.setShuffleEnabled(!shuffled_play);
                 }}
               >
                 <Ionicons
@@ -489,10 +497,7 @@ export default function bookmark() {
                   <Animated.View style={{ opacity }}>
                     <Ionicons
                       name={
-                        AudioPro.getState() != AudioProState.PLAYING ||
-                        !bookmark_access
-                          ? "play"
-                          : "pause"
+                        !currently_played || !bookmark_access ? "play" : "pause"
                       }
                       size={38}
                       color={"white"}
@@ -511,7 +516,8 @@ export default function bookmark() {
                         // else if (!playingTrack) {
 
                         if (
-                          AudioPro.getState() == AudioProState.IDLE ||
+                          TrackPlayer.getPlaybackState() ==
+                            PlaybackState.Idle ||
                           !globalThis.bookmark_access
                         ) {
                           let items = Object.values(
@@ -527,20 +533,21 @@ export default function bookmark() {
                           router.push({
                             pathname: "/(mplay)/audio",
                             params: {
-                              id: items[0].id,
-                              bookmark_access: true,
+                              id: items[0].mediaId,
+                              index_bookmark: 0,
                             },
                           });
                         } else if (
-                          AudioPro.getState() == AudioProState.PLAYING &&
+                          TrackPlayer.isPlaying() &&
                           globalThis.bookmark_access
                         )
-                          AudioPro.pause();
+                          TrackPlayer.pause();
                         else if (
-                          AudioPro.getState() == AudioProState.PAUSED &&
+                          !TrackPlayer.playing() &&
+                          TrackPlayer.getPlaybackState == PlaybackState.Ready &&
                           globalThis.bookmark_access
                         )
-                          AudioPro.resume();
+                          TrackPlayer.play();
                       }}
                     ></Ionicons>
                   </Animated.View>
@@ -633,7 +640,7 @@ export default function bookmark() {
               </View>
             }
             renderItem={({ item, index }) => {
-              // let is_current = playingTrack?.id==item.id
+              // let is_current = playingTrack?.mediaId==item.mediaId
               return (
                 <View
                   style={{
@@ -648,13 +655,13 @@ export default function bookmark() {
                     borderBottomLeftRadius: 4,
                     width: "100%",
                     backgroundColor:
-                      playingTrack && playingTrack.id == item.id
+                      playingTrack && playingTrack.mediaId == item.mediaId
                         ? "#222640"
                         : "transparent",
                     opacity:
                       loaded_downloaded_md &&
-                      loaded_downloaded_md[item.id]?.url &&
-                      loaded_downloaded_md[item.id]?.artwork
+                      loaded_downloaded_md[item.mediaId]?.url &&
+                      loaded_downloaded_md[item.mediaId]?.artworkUrl
                         ? 1
                         : 0.3,
                   }}
@@ -667,7 +674,8 @@ export default function bookmark() {
                       router.push({
                         pathname: "/(mplay)/audio",
                         params: {
-                          id: item.id,
+                          id: item.mediaId,
+                          index_bookmark: index,
                         },
                       });
                     }}
@@ -675,8 +683,8 @@ export default function bookmark() {
                     <Image
                       source={{
                         uri: online_access
-                          ? `http://192.168.0.22:8000${item.artwork}`
-                          : item.artwork,
+                          ? `http://192.168.0.22:8000${item.artworkUrl}`
+                          : item.artworkUrl,
                       }}
                       style={{ width: 64, height: 64, borderRadius: 4 }}
                     ></Image>
@@ -694,7 +702,7 @@ export default function bookmark() {
                       <Text
                         style={{
                           color:
-                            playingTrack && playingTrack.id == item.id
+                            playingTrack && playingTrack.mediaId == item.mediaId
                               ? "#EC786B"
                               : "white",
                           fontFamily: "MontserratBold",
@@ -714,8 +722,8 @@ export default function bookmark() {
                     </View>
                     <TouchableOpacity
                       onPress={() => {
-                        if (loaded_downloaded_md[item.id])
-                          set_visible_song_options(item.id);
+                        if (loaded_downloaded_md[item.mediaId])
+                          set_visible_song_options(item.mediaId);
                       }}
                     >
                       <Ionicons
@@ -740,7 +748,7 @@ export default function bookmark() {
             <TouchableOpacity style={styles.coverShadow} onPress={()=> {
                 // play_by_index(index)
               }}>
-                {/* <Image source={{uri:item.artwork}} style={{width:64, height:64, borderRadius:4}}></Image> 
+                {/* <Image source={{uri:item.artworkUrl}} style={{width:64, height:64, borderRadius:4}}></Image> 
                 <Image source={require("../../assets/images/icon.png")} style={{width:64, height:64, borderRadius:4}}></Image>
 
               </TouchableOpacity>

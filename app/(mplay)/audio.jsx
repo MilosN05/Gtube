@@ -17,20 +17,22 @@ import {
 } from "react-native";
 
 import Slider from "@react-native-community/slider";
-import { AudioPro, AudioProState, useAudioPro } from "react-native-audio-pro";
+// import { TrackPlayer, TrackPlayerState } from "react-native-audio-pro";
 import { secure_fetch } from "../../scripts/secure_fetch";
-import {
-  play_by_index,
-  play_next,
-  play_previous,
-  setTracks,
-} from "../../setupAudio";
 import { outer_store } from "../../store/store";
 
+import TrackPlayer, {
+  useActiveMediaItem,
+  useIsPlaying,
+  useProgress,
+} from "@rntp/player";
 import { download_save } from "../(home)/main";
 
 async function get_data(funkcija, id) {
   try {
+    //IDEJA ZA POBOLJŠANJE PERFOMANSI
+    //Umesto da šalješ GET uvek, ako korisnik ima pesmu koja je trenutno puštena u plejeru a ista kao i onoj putem koje se ulazi u ovaj ekran
+    //Onda preskoči i iskoristi postojuće, sada to nisam uradio jer nemam mnogo vremena, a moram celu logiku rada da menjam.
     const response = await fetch("http://192.168.0.22:8000/nasumicniZapisi/", {
       method: "POST",
       body: new URLSearchParams({ brojSnimaka: 10, idSnimka: id }).toString(),
@@ -43,21 +45,22 @@ async function get_data(funkcija, id) {
     }
 
     const data = await response.json();
-    // data.artwork = "http://192.168.0.22:8000"+data.artwork
+    // data.artworkUrl = "http://192.168.0.22:8000"+data.artworkUrl
     // data.url= "http://192.168.0.22:8000"+data.url
     // data.url = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
 
     data.forEach((data) => {
-      data.artwork = "http://192.168.0.22:8000" + data.artwork;
+      data.artworkUrl = "http://192.168.0.22:8000" + data.artworkUrl;
       data.url = "http://192.168.0.22:8000" + data.url;
     });
     // console.log(data)
 
     funkcija(data);
 
-    setTracks(data);
+    // setTracks(data);
+    // TrackPlayer.setMediaItems(data);
 
-    // AudioPro.pause()
+    // TrackPlayer.pause()
   } catch (error) {
     console.log("Fetch neuspesan !: ", error);
   }
@@ -72,14 +75,14 @@ async function get_data_bookmark(funkcija, id, online_access) {
 
     loaded_bookmark = loaded_bookmark.map((data) => ({
       ...data,
-      artwork: "http://192.168.0.22:8000" + data.artwork,
+      artworkUrl: "http://192.168.0.22:8000" + data.artworkUrl,
       url: "http://192.168.0.22:8000" + data.url,
     }));
 
     console.log(loaded_bookmark);
 
     // loaded_bookmark.forEach((data) => {
-    //   data.artwork = "http://192.168.0.22:8000" + data.artwork;
+    //   data.artworkUrl = "http://192.168.0.22:8000" + data.artworkUrl;
     //   data.url = "http://192.168.0.22:8000" + data.url;
     // });
   } else loaded_downloaded_md = Object.values(loaded_downloaded_md);
@@ -88,12 +91,19 @@ async function get_data_bookmark(funkcija, id, online_access) {
   let data = online_access ? loaded_bookmark : loaded_downloaded_md;
 
   funkcija(data);
-  setTracks(data);
+  // setTracks(data);
 }
 
-function to_seconds(ms) {
+function to_seconds_elapsed(ms) {
   let sekunde = Math.trunc(Math.trunc(ms % 60000) / 1000);
   let minute = Math.trunc(ms / 60000);
+  return sekunde >= 10 ? `${minute}:${sekunde}` : `${minute}:0${sekunde}`;
+}
+
+function elapsed(s) {
+  let sekunde = Math.trunc(s % 60);
+  let minute = Math.trunc(s / 60);
+
   return sekunde >= 10 ? `${minute}:${sekunde}` : `${minute}:0${sekunde}`;
 }
 
@@ -129,8 +139,14 @@ export async function switch_song(opacity2) {
 }
 
 export function player() {
-  const { position, duration, playingTrack } = useAudioPro();
-  const { id } = useLocalSearchParams();
+  const playingTrack = useActiveMediaItem();
+  const currently_played = useIsPlaying();
+  const { position, duration } = useProgress();
+  // let position = 1;
+  // let duration = 1;
+
+  // console.log(position);
+  const { id, index_bookmark } = useLocalSearchParams();
   let [podaci, ucitaj_podatke] = useState([]);
   let [lyrics_visible, set_lyrics_visible] = useState(false);
   let [list_of_songs_visible, set_ls_visible] = useState(false);
@@ -159,28 +175,44 @@ export function player() {
   console.log(`test iz audio.jsx`);
   useEffect(() => {
     if (!globalThis.bookmark_access) {
-      if (podaci[0] && playingTrack && podaci[0].id != playingTrack.id)
-        AudioPro.play(podaci[0]);
-      else if (!playingTrack && podaci[0]) AudioPro.play(podaci[0]);
+      // console.log(playingTrack);
+      if (
+        podaci[0] &&
+        playingTrack &&
+        podaci[0].mediaId != playingTrack.mediaId
+      )
+        TrackPlayer.setMediaItems(podaci);
+      else if (!playingTrack && podaci[0]) TrackPlayer.setMediaItems(podaci);
     } else {
-      let song_to_play = online_access
-        ? loaded_bookmark[id]
-        : loaded_downloaded_md[id];
+      // let song_to_play = online_access
+      //   ? loaded_bookmark[id]
+      //   : loaded_downloaded_md[id];
+      // // song_to_play.url = "http://192.168.0.22:8000" + song_to_play.url;
+      // // song_to_play.artworkUrl = "http://192.168.0.22:8000" + song_to_play.artworkUrl;
+      // if (online_access)
+      //   song_to_play = {
+      //     ...song_to_play,
+      //     url: "http://192.168.0.22:8000" + song_to_play.url,
+      //     artworkUrl: "http://192.168.0.22:8000" + song_to_play.artworkUrl,
+      //   };
+      //   if (
+      //     song_to_play &&
+      //     playingTrack &&
+      //     song_to_play.mediaId != playingTrack.mediaId
+      //   )
+      //     TrackPlayer.play();
+      //   else if (!playingTrack && song_to_play) TrackPlayer.play();
 
-      // song_to_play.url = "http://192.168.0.22:8000" + song_to_play.url;
-      // song_to_play.artwork = "http://192.168.0.22:8000" + song_to_play.artwork;
-
-      if (online_access)
-        song_to_play = {
-          ...song_to_play,
-          url: "http://192.168.0.22:8000" + song_to_play.url,
-          artwork: "http://192.168.0.22:8000" + song_to_play.artwork,
-        };
-
-      if (song_to_play && playingTrack && song_to_play.id != playingTrack.id)
-        AudioPro.play(song_to_play);
-      else if (!playingTrack && song_to_play) AudioPro.play(song_to_play);
+      if (
+        podaci[0] &&
+        playingTrack &&
+        podaci[0].mediaId != playingTrack.mediaId
+      )
+        TrackPlayer.setMediaItems(podaci);
+      else if (!playingTrack && podaci[0]) TrackPlayer.setMediaItems(podaci);
+      TrackPlayer.skipToIndex(JSON.parse(index_bookmark));
     }
+    TrackPlayer.play();
   }, [podaci]);
 
   useEffect(() => {
@@ -191,8 +223,8 @@ export function player() {
   }, [playingTrack]);
 
   useEffect(() => {
-    console.log(`ID: ${playingTrack?.id} | ${position}`);
-  }, [playingTrack?.id]);
+    console.log(`ID: ${playingTrack?.mediaId} | ${position}`);
+  }, [playingTrack?.mediaId]);
 
   const opacity = useRef(new Animated.Value(1)).current;
   const opacity2 = useRef(new Animated.Value(1)).current;
@@ -279,7 +311,7 @@ export function player() {
             >
               <View style={styles.coverShadow}>
                 <Image
-                  source={{ uri: playingTrack?.artwork }}
+                  source={{ uri: playingTrack?.artworkUrl }}
                   style={{ width: 64, height: 64, borderRadius: 4 }}
                 ></Image>
               </View>
@@ -347,10 +379,10 @@ export function player() {
               /> */}
 
               <FlatList
-                data={podaci}
+                data={TrackPlayer.getQueue()}
                 style={{ paddingLeft: 25, paddingRight: 25 }}
                 renderItem={({ item, index }) => {
-                  let is_current = playingTrack?.id == item.id;
+                  let is_current = playingTrack?.mediaId == item.mediaId;
                   return (
                     <View
                       style={{
@@ -372,11 +404,11 @@ export function player() {
                       <TouchableOpacity
                         style={styles.coverShadow}
                         onPress={() => {
-                          play_by_index(index);
+                          TrackPlayer.skipToIndex(index);
                         }}
                       >
                         <Image
-                          source={{ uri: item.artwork }}
+                          source={{ uri: item.artworkUrl }}
                           style={{ width: 64, height: 64, borderRadius: 4 }}
                         ></Image>
                       </TouchableOpacity>
@@ -464,7 +496,7 @@ export function player() {
                 minimumValue={0}
                 maximumValue={duration}
                 value={position == duration || position == 0 ? 0 : position}
-                onSlidingComplete={AudioPro.seekTo}
+                onSlidingComplete={TrackPlayer.seekTo}
                 minimumTrackTintColor="#ff9f43"
                 maximumTrackTintColor="gray"
                 thumbTintColor="white"
@@ -483,9 +515,7 @@ export function player() {
                     fontSize: 15,
                   }}
                 >
-                  {to_seconds(
-                    position == duration || position == 0 ? 0 : position,
-                  )}
+                  {elapsed(position)}
                 </Text>
                 <Text
                   style={{
@@ -494,7 +524,7 @@ export function player() {
                     fontSize: 15,
                   }}
                 >
-                  {to_seconds(duration)}
+                  {elapsed(duration)}
                 </Text>
               </View>
             </View>
@@ -505,20 +535,15 @@ export function player() {
             >
               <Animated.View style={{ opacity }}>
                 <Ionicons
-                  name={
-                    AudioPro.getState() == AudioProState.PLAYING
-                      ? `pause`
-                      : "play"
-                  }
+                  name={currently_played ? `pause` : "play"}
                   color={"white"}
                   size={30}
                   onPress={() => {
                     console.log(opacity);
                     toggleIcon(opacity);
-                    if (AudioPro.getState() == AudioProState.PLAYING)
-                      AudioPro.pause();
+                    if (currently_played) TrackPlayer.pause();
                     else {
-                      AudioPro.resume();
+                      TrackPlayer.play();
                     }
                   }}
                 ></Ionicons>
@@ -564,7 +589,7 @@ export function player() {
               >
                 <View style={styles.coverShadow}>
                   <Image
-                    source={{ uri: playingTrack?.artwork }}
+                    source={{ uri: playingTrack?.artworkUrl }}
                     style={{ width: 64, height: 64, borderRadius: 4 }}
                   ></Image>
                 </View>
@@ -683,7 +708,7 @@ export function player() {
                   minimumValue={0}
                   maximumValue={duration}
                   value={position == duration || position == 0 ? 0 : position}
-                  onSlidingComplete={AudioPro.seekTo}
+                  onSlidingComplete={TrackPlayer.seekTo}
                   minimumTrackTintColor="#ff9f43"
                   maximumTrackTintColor="gray"
                   thumbTintColor="white"
@@ -702,9 +727,7 @@ export function player() {
                       fontSize: 15,
                     }}
                   >
-                    {to_seconds(
-                      position == duration || position == 0 ? 0 : position,
-                    )}
+                    {elapsed(position)}
                   </Text>
                   <Text
                     style={{
@@ -713,7 +736,7 @@ export function player() {
                       fontSize: 15,
                     }}
                   >
-                    {to_seconds(duration)}
+                    {elapsed(duration)}
                   </Text>
                 </View>
               </View>
@@ -724,20 +747,15 @@ export function player() {
               >
                 <Animated.View style={{ opacity }}>
                   <Ionicons
-                    name={
-                      AudioPro.getState() == AudioProState.PLAYING
-                        ? `pause`
-                        : "play"
-                    }
+                    name={currently_played ? `pause` : "play"}
                     color={"white"}
                     size={30}
                     onPress={() => {
                       console.log(opacity);
                       toggleIcon(opacity);
-                      if (AudioPro.getState() == AudioProState.PLAYING)
-                        AudioPro.pause();
+                      if (currently_played) TrackPlayer.pause();
                       else {
-                        AudioPro.resume();
+                        TrackPlayer.play();
                       }
                     }}
                   ></Ionicons>
@@ -796,7 +814,7 @@ export function player() {
           <Animated.View style={{ opacity: opacity2 }}>
             {/* url pesme ce ici */}
             <Image
-              source={{ uri: `${playingTrack?.artwork}` }}
+              source={{ uri: `${playingTrack?.artworkUrl}` }}
               style={{ width: 230, height: 230, borderRadius: 10 }}
             ></Image>
           </Animated.View>
@@ -853,14 +871,14 @@ export function player() {
                   return;
                 }
 
-                let id_azapisa = eval(playingTrack.id);
+                let id_azapisa = eval(playingTrack.mediaId);
                 // console.log(`${id_azapisa} | ${info_data?.Ime}`)
                 let response = await secure_fetch(
                   `http://192.168.0.22:8000/bookmark/${info_data?.Ime}`,
                   {
                     method: "POST",
                     body: new URLSearchParams({
-                      idSnimka: playingTrack.id,
+                      idSnimka: playingTrack.mediaId,
                     }).toString(),
                     headers: {
                       "Content-type": "application/x-www-form-urlencoded",
@@ -891,13 +909,13 @@ export function player() {
                 );
 
                 if (response_text == 1) {
-                  loaded_bookmark[playingTrack.id] = {
+                  loaded_bookmark[playingTrack.mediaId] = {
                     artist: playingTrack.artist,
-                    artwork: playingTrack.artwork.replace(
+                    artworkUrl: playingTrack.artworkUrl.replace(
                       "http://192.168.0.22:8000",
                       "",
                     ),
-                    id: playingTrack.id,
+                    id: playingTrack.mediaId,
                     lyrics: playingTrack.lyrics,
                     title: playingTrack.title,
                     url: playingTrack.url.replace(
@@ -908,7 +926,7 @@ export function player() {
 
                   await download_save(
                     playingTrack.url,
-                    playingTrack.artwork,
+                    playingTrack.artworkUrl,
                     playingTrack.title,
                   );
 
@@ -935,7 +953,7 @@ export function player() {
                   }
                 } else if (response_text == -1) {
                   // parsed_data.Bookmark[id_azapisa]=false
-                  delete loaded_bookmark[playingTrack.id];
+                  delete loaded_bookmark[playingTrack.mediaId];
 
                   const file_audio = new File(
                     paths_document_uri +
@@ -961,18 +979,18 @@ export function player() {
               }}
             >
               {/* <Ionicons name="heart-outline"size={30} color={"white"}></Ionicons> */}
-              {/* {console.log(playingTrack.id)} */}
+              {/* {console.log(playingTrack.mediaId)} */}
               {/* {console.log(loaded_bookmark)} */}
-              {/* {console.log(loaded_bookmark[playingTrack.id])} */}
+              {/* {console.log(loaded_bookmark[playingTrack.mediaId])} */}
               <Ionicons
                 name={
-                  playingTrack?.id && loaded_bookmark[playingTrack.id]
+                  playingTrack?.mediaId && loaded_bookmark[playingTrack.mediaId]
                     ? "heart"
                     : "heart-outline"
                 }
                 size={32}
                 color={
-                  playingTrack?.id && loaded_bookmark[playingTrack.id]
+                  playingTrack?.mediaId && loaded_bookmark[playingTrack.mediaId]
                     ? "red"
                     : "white"
                 }
@@ -980,17 +998,17 @@ export function player() {
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => {
-                let ispunjen_uslov = AudioPro.getVolume() == 1;
+                let ispunjen_uslov = TrackPlayer.getVolume() == 1;
                 if (ispunjen_uslov) {
-                  AudioPro.setVolume(0);
+                  TrackPlayer.setVolume(0);
                 } else {
-                  AudioPro.setVolume(1);
+                  TrackPlayer.setVolume(1);
                 }
               }}
             >
               <Ionicons
                 name={
-                  AudioPro.getVolume() == 1
+                  TrackPlayer.getVolume() == 1
                     ? `volume-high-outline`
                     : `volume-mute-outline`
                 }
@@ -1010,7 +1028,7 @@ export function player() {
 
         <Slider
           style={styles.slider}
-          onValueChange={AudioPro.seekTo}
+          onValueChange={TrackPlayer.seekTo}
           minimumValue={0}
           value={position}
           maximumValue={duration}
@@ -1047,7 +1065,7 @@ export function player() {
             minimumValue={0}
             maximumValue={duration}
             value={position == duration || position == 0 ? 0 : position}
-            onSlidingComplete={AudioPro.seekTo}
+            onSlidingComplete={TrackPlayer.seekTo}
             minimumTrackTintColor="#ff9f43"
             maximumTrackTintColor="gray"
             thumbTintColor="white"
@@ -1065,12 +1083,12 @@ export function player() {
             <Text
               style={{ fontFamily: "Montserrat", color: "white", fontSize: 15 }}
             >
-              {to_seconds(position == duration || position == 0 ? 0 : position)}
+              {elapsed(position)}
             </Text>
             <Text
               style={{ fontFamily: "Montserrat", color: "white", fontSize: 15 }}
             >
-              {to_seconds(duration)}
+              {elapsed(duration)}
             </Text>
           </View>
 
@@ -1085,7 +1103,7 @@ export function player() {
           >
             <TouchableOpacity
               onPress={() => {
-                AudioPro.seekTo(0);
+                TrackPlayer.seekTo(0);
               }}
             >
               <Ionicons
@@ -1096,7 +1114,7 @@ export function player() {
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => {
-                play_previous();
+                TrackPlayer.skipToPrevious();
               }}
             >
               <Ionicons
@@ -1111,26 +1129,22 @@ export function player() {
             >
               <Animated.View style={{ opacity }}>
                 <Ionicons
-                  name={
-                    AudioPro.getState() == AudioProState.PLAYING
-                      ? `pause`
-                      : "play"
-                  }
+                  name={currently_played ? `pause` : "play"}
                   color={"white"}
                   size={30}
                   onPress={() => {
                     console.log(opacity);
+                    console.log(currently_played);
                     toggleIcon(opacity);
-                    if (AudioPro.getState() == AudioProState.PLAYING)
-                      AudioPro.pause();
+                    if (currently_played) TrackPlayer.pause();
                     else {
-                      AudioPro.resume();
+                      TrackPlayer.play();
                     }
                   }}
                 ></Ionicons>
               </Animated.View>
             </LinearGradient>
-            <TouchableOpacity onPress={() => play_next()}>
+            <TouchableOpacity onPress={() => TrackPlayer.skipToNext()}>
               <Ionicons
                 name="play-forward-outline"
                 color={"white"}
@@ -1140,6 +1154,7 @@ export function player() {
             <TouchableOpacity
               onPress={() => {
                 loaded_zustand_s_shuffled(!shuffled_play);
+                TrackPlayer.setShuffleEnabled(!shuffled_play);
               }}
             >
               <Ionicons
@@ -1195,7 +1210,6 @@ const THUMB_SIZE = 24;
 const TRACK_HEIGHT = 4;
 
 // const styles = StyleSheet.create({
-//   container: {
 //     width: 300,
 //     height: THUMB_SIZE, // slider height = thumb size
 //     justifyContent: "center",
