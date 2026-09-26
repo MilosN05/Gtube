@@ -1,27 +1,44 @@
 {
   "expo": {
     "name": "Gtube",
-    "slug": "Gtube",
-    "version": "1.0.0",
+    "slug": "gtube2026-5az6t4cuvlux9lnynnwl-",
+    "version": "2026.1.1",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/9mapL_solid.png",
     "scheme": "gtube",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-
     "ios": {
-      "supportsTablet": true
+      "entitlements": {
+        "com.apple.developer.networking.wifi-info": true
+      },
+      "supportsTablet": true,
+      "infoPList": {
+        "UIBackgroundModes": ["audio"],
+        "NSAppTransportSecurity": {
+          "NSExceptionDomains": {
+            "94.189.212.58": {
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSIncludesSubdomains": true
+            }
+          }
+        }
+      }
     },
     "android": {
+      "usesCleartextTraffic": true,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/images/9mapL.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.milosdev.Gtube"
+      "package": "com.milosdev.Gtube",
+      "permissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET"
+      ]
     },
     "web": {
       "output": "static",
@@ -67,6 +84,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b790c7da-0d6f-4fee-b696-83e164092471"
+      }
+    },
+    "owner": "milosdev"
   }
 }

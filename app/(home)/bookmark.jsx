@@ -69,7 +69,7 @@ export default function bookmark() {
   let shuffled_play = outer_store((state) => state.shuffled_play);
 
   let opacity = useRef(new Animated.Value(1)).current;
-
+  console.log(loaded_downloaded_md);
   return (
     <View style={{ display: "flex", flex: 1, backgroundColor: "#111425" }}>
       <Modal
@@ -543,7 +543,7 @@ export default function bookmark() {
                         )
                           TrackPlayer.pause();
                         else if (
-                          !TrackPlayer.playing() &&
+                          !TrackPlayer.isPlaying() &&
                           TrackPlayer.getPlaybackState == PlaybackState.Ready &&
                           globalThis.bookmark_access
                         )
@@ -571,20 +571,26 @@ export default function bookmark() {
           />
           <FlatList
             data={Object.values(
-              online_access ? loaded_bookmark : loaded_downloaded_md || [],
+              online_access ? loaded_bookmark : loaded_downloaded_md,
             )}
             style={{ overflow: "hidden" }}
             ListEmptyComponent={
               <View
                 style={{
-                  width: "100%",
-                  height: "100%",
                   display: "flex",
                   justifyContent: "center",
                   alignItems: "center",
+                  // backgroundColor: "red",
+                  flex: 1,
                 }}
               >
-                <Text style={{ fontFamily: "Montserrat", fontSize: 10 }}>
+                <Text
+                  style={{
+                    fontFamily: "Montserrat",
+                    fontSize: 13,
+                    color: "white",
+                  }}
+                >
                   Prazno
                 </Text>
               </View>
@@ -739,6 +745,7 @@ export default function bookmark() {
             contentContainerStyle={{
               gap: 10,
               display: "flex",
+              flexGrow: 1,
             }}
           ></FlatList>
 

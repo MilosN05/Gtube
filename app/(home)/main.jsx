@@ -18,6 +18,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { secure_fetch } from "../../scripts/secure_fetch";
 import { outer_store } from "../../store/store";
 
@@ -128,6 +129,8 @@ export default function HomeScreen() {
     pokreni_refresh(true);
     setTimeout(() => pokreni_refresh(false), 1000);
   }
+
+  const insets = useSafeAreaInsets();
 
   let Dot_loading = ({ style, container_style }) => {
     let scale1 = useRef(new Animated.Value(0.6)).current;
@@ -583,7 +586,7 @@ export default function HomeScreen() {
                 textAlign: "center",
               }}
             >
-              EXPLORE{"\n"}NEW MUSIC
+              OTKRIJ{"\n"}NOVI ZVUK
             </Text>
             <Text
               style={{
@@ -594,13 +597,13 @@ export default function HomeScreen() {
                 textAlign: "center",
               }}
             >
-              Lorem ipsum dolor sit amet,{"\n"}conssstetur adipiscing.
+              Pronađi najnovije hitove,{"\n"}tvojih omiljenih izvođača.
             </Text>
           </View>
         </LinearGradient>
       </View>
 
-      <View style={{ paddingTop: 0 }}>
+      <View style={{ paddingTop: 0, flex: 1 }}>
         <View
           style={{
             backgroundColor: "#3F4158",
@@ -643,7 +646,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <View style={{ paddingTop: 10 }}>
+        <View style={{ paddingTop: 10, flex: 1 }}>
           <Text
             style={{
               fontFamily: "MontserratBold",
@@ -736,7 +739,13 @@ export default function HomeScreen() {
             {"\n"}NEDAVNA PUŠTANJA
           </Text>
 
-          <View style={{ maxHeight: "41%" }}>
+          <View
+            style={{
+              // height: "41%",
+              flex: 1,
+              // backgroundColor: "green",
+            }}
+          >
             <LinearGradient
               colors={["#111425", "transparent"]}
               style={{
@@ -755,7 +764,6 @@ export default function HomeScreen() {
                 paddingTop: 10,
                 gap: 20,
                 paddingLeft: 25,
-                paddingBottom: 20,
               }}
               data={skorasnji_unosi}
               renderItem={({ item, index }) => (

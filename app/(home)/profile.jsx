@@ -12,6 +12,7 @@ export default function profile() {
   const [image, set_image] = useState(null);
   const [refresh, set_refresh] = useState(false);
   // const { info_data, set_info_data, online_access } = useUser();
+  let loaded_zustand_s_info_data = outer_store.getState().set_info_data_zus;
 
   let online_access = outer_store((state) => state.online_access);
   let info_data = outer_store((state) => state.info_data);
@@ -61,6 +62,7 @@ export default function profile() {
         headers: {
           "Content-Type": "multipart/form-data",
         },
+        cache: "no-store",
       },
     );
 
@@ -77,9 +79,10 @@ export default function profile() {
       return;
     }
     console.log(response_json);
-    set_info_data(
-      JSON.stringify({ ...info_data, Profilna: response_json.Profilna }),
-    );
+    loaded_zustand_s_info_data({
+      ...info_data,
+      Profilna: response_json.Profilna,
+    });
   }
 
   return !online_access ? (
@@ -182,7 +185,7 @@ export default function profile() {
         <TouchableOpacity onPress={() => choose_image()}>
           <Image
             source={{
-              uri: `http://192.168.0.22:8000/media/${info_data?.Profilna}`,
+              uri: `http://192.168.0.22:8000/media/${info_data?.Profilna}?t=${new Date().getTime()}`,
             }}
             style={{
               width: 130,

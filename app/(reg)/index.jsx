@@ -11,7 +11,7 @@ import { setup_audio } from "../../setup_track_player";
 import { outer_store } from "../../store/store";
 
 let loaded_zustand_dsong = outer_store.getState().set_downloaded_zus;
-let loaded_zustand_s_is_sactive = outer_store.getState().set_is_active_zus;
+let loaded_zustand_s_is_sactive = outer_store.getState().set_is_sactive_zus;
 let loaded_zustand_s_is_connected = outer_store.getState().set_is_connected_zus;
 let loaded_zustand_s_info_data = outer_store.getState().set_info_data_zus;
 
@@ -28,6 +28,8 @@ async function is_logged() {
     let meta_data_songs = JSON.parse(
       await AsyncStorage.getItem("meta_data_songs"),
     );
+
+    if (!meta_data_songs) meta_data_songs = {};
 
     loaded_zustand_dsong(meta_data_songs);
     loaded_zustand_s_info_data(JSON.parse(result));
