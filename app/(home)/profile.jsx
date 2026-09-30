@@ -54,17 +54,14 @@ export default function profile() {
     form_data.append("Email", info_data.Email);
     form_data.append("Ime", info_data.Ime);
 
-    let response = await secure_fetch(
-      "http://192.168.0.22:8000/unosProfilne/",
-      {
-        method: "POST",
-        body: form_data,
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        cache: "no-store",
+    let response = await secure_fetch("http://94.189.212.58/unosProfilne/", {
+      method: "POST",
+      body: form_data,
+      headers: {
+        "Content-Type": "multipart/form-data",
       },
-    );
+      cache: "no-store",
+    });
 
     if (response == -9999) return;
     if (!response.ok) {
@@ -185,7 +182,7 @@ export default function profile() {
         <TouchableOpacity onPress={() => choose_image()}>
           <Image
             source={{
-              uri: `http://192.168.0.22:8000/media/${info_data?.Profilna}?t=${new Date().getTime()}`,
+              uri: `http://94.189.212.58/media/${info_data?.Profilna}?t=${new Date().getTime()}`,
             }}
             style={{
               width: 130,

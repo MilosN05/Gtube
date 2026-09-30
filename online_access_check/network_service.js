@@ -10,15 +10,15 @@ async function check_server() {
     setTimeout(() => {
       controller.abort();
     }, 1500);
-
-    await fetch("http://192.168.0.22:8000/", {
+    //ako razvijaš server u produkciju ovde stavi port konkretnije tačnu ip adresu od servera koji SADRŽI sve podatke tj koji je glavnni a ne od NGINX ili APACHE-A !
+    await fetch("http://94.189.212.58:8000/", {
       signal: controller.signal,
     });
 
     loaded_zustand_s_is_sactive(true);
   } catch (error) {
-    console.log(error);
-    loaded_zustand_s_is_sactive(false);
+    console.log(`sazvano u network_service: ${error}`);
+    if (outer_store.getState().is_connected) loaded_zustand_s_is_sactive(false);
   }
 }
 

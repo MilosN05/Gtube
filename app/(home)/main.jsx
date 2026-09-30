@@ -73,7 +73,7 @@ export async function download_save(url_audio, url_thumbnail, name_of_song) {
 
 async function get_data(funkcija, page, search_params) {
   try {
-    const response = await fetch(`http://192.168.0.22:8000/${page}/`, {
+    const response = await fetch(`http://94.189.212.58/${page}/`, {
       method: "POST",
       body: new URLSearchParams(search_params).toString(),
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -81,17 +81,19 @@ async function get_data(funkcija, page, search_params) {
 
     // console.log(response)
     if (!response.ok) {
-      throw new Error(`HTTP greska ! Status: ${response.status}`);
+      // throw new Error(`HTTP greska ! Status: ${response.status}`);
+      Alert.alert("Nešto nije u redu sa lajkovanjem pesme !");
+      return;
     }
 
     const data = await response.json();
-    // data.artworkUrl = "http://192.168.0.22:8000"+data.artworkUrl
-    // data.url= "http://192.168.0.22:8000"+data.url
+    // data.artworkUrl = "http://94.189.212.58"+data.artworkUrl
+    // data.url= "http://94.189.212.58"+data.url
     // data.url = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
 
     data.forEach((data) => {
-      data.artworkUrl = "http://192.168.0.22:8000" + data.artworkUrl;
-      data.url = "http://192.168.0.22:8000" + data.url;
+      data.artworkUrl = "http://94.189.212.58" + data.artworkUrl;
+      data.url = "http://94.189.212.58" + data.url;
     });
     // console.log(data)
 
@@ -827,7 +829,7 @@ export default function HomeScreen() {
                           let id_azapisa = eval(item.mediaId);
                           console.log(`KORISNIK KOJI SKIDA: ${info_data?.Ime}`);
                           let response = await secure_fetch(
-                            `http://192.168.0.22:8000/bookmark/${info_data?.Ime}`,
+                            `http://94.189.212.58/bookmark/${info_data?.Ime}`,
                             {
                               method: "POST",
                               body: new URLSearchParams({
@@ -866,13 +868,10 @@ export default function HomeScreen() {
                             loaded_bookmark[id_azapisa] = {
                               ...item,
                               artworkUrl: item.artworkUrl.replace(
-                                "http://192.168.0.22:8000",
+                                "http://94.189.212.58",
                                 "",
                               ),
-                              url: item.url.replace(
-                                "http://192.168.0.22:8000",
-                                "",
-                              ),
+                              url: item.url.replace("http://94.189.212.58", ""),
                             };
 
                             console.log(`URL: ${item.url}`);

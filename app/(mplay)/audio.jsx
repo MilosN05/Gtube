@@ -38,7 +38,7 @@ async function get_data(funkcija, id) {
     //IDEJA ZA POBOLJŠANJE PERFOMANSI
     //Umesto da šalješ GET uvek, ako korisnik ima pesmu koja je trenutno puštena u plejeru a ista kao i onoj putem koje se ulazi u ovaj ekran
     //Onda preskoči i iskoristi postojuće, sada to nisam uradio jer nemam mnogo vremena, a moram celu logiku rada da menjam.
-    const response = await fetch("http://192.168.0.22:8000/nasumicniZapisi/", {
+    const response = await fetch("http://94.189.212.58/nasumicniZapisi/", {
       method: "POST",
       body: new URLSearchParams({ brojSnimaka: 10, idSnimka: id }).toString(),
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -46,17 +46,18 @@ async function get_data(funkcija, id) {
 
     // console.log(response)
     if (!response.ok) {
-      throw new Error(`HTTP greska ! Status: ${response.status}`);
+      Alert.alert("Nešto nije u redu sa lajkovanjem pesme !");
+      return;
     }
 
     const data = await response.json();
-    // data.artworkUrl = "http://192.168.0.22:8000"+data.artworkUrl
-    // data.url= "http://192.168.0.22:8000"+data.url
+    // data.artworkUrl = "http://94.189.212.58"+data.artworkUrl
+    // data.url= "http://94.189.212.58"+data.url
     // data.url = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
 
     data.forEach((data) => {
-      data.artworkUrl = "http://192.168.0.22:8000" + data.artworkUrl;
-      data.url = "http://192.168.0.22:8000" + data.url;
+      data.artworkUrl = "http://94.189.212.58" + data.artworkUrl;
+      data.url = "http://94.189.212.58" + data.url;
       data.extras = { lyrics: data.lyrics };
     });
     // console.log(data)
@@ -81,18 +82,24 @@ async function get_data_bookmark(funkcija, id, online_access) {
 
     loaded_bookmark = loaded_bookmark.map((data) => ({
       ...data,
-      artworkUrl: "http://192.168.0.22:8000" + data.artworkUrl,
-      url: "http://192.168.0.22:8000" + data.url,
+      artworkUrl: "http://94.189.212.58" + data.artworkUrl,
+      url: "http://94.189.212.58" + data.url,
       extras: { lyrics: data.lyrics },
     }));
 
     // console.log(loaded_bookmark);
 
     // loaded_bookmark.forEach((data) => {
-    //   data.artworkUrl = "http://192.168.0.22:8000" + data.artworkUrl;
-    //   data.url = "http://192.168.0.22:8000" + data.url;
+    //   data.artworkUrl = "http://94.189.212.58" + data.artworkUrl;
+    //   data.url = "http://94.189.212.58" + data.url;
     // });
-  } else loaded_downloaded_md = Object.values(loaded_downloaded_md);
+  } else {
+    loaded_downloaded_md = Object.values(loaded_downloaded_md);
+    loaded_downloaded_md = loaded_downloaded_md.map((data) => ({
+      ...data,
+      extras: { lyrics: data.lyrics },
+    }));
+  }
   // console.log(data)
 
   let data = online_access ? loaded_bookmark : loaded_downloaded_md;
@@ -194,13 +201,13 @@ export function player() {
       // let song_to_play = online_access
       //   ? loaded_bookmark[id]
       //   : loaded_downloaded_md[id];
-      // // song_to_play.url = "http://192.168.0.22:8000" + song_to_play.url;
-      // // song_to_play.artworkUrl = "http://192.168.0.22:8000" + song_to_play.artworkUrl;
+      // // song_to_play.url = "http://94.189.212.58" + song_to_play.url;
+      // // song_to_play.artworkUrl = "http://94.189.212.58" + song_to_play.artworkUrl;
       // if (online_access)
       //   song_to_play = {
       //     ...song_to_play,
-      //     url: "http://192.168.0.22:8000" + song_to_play.url,
-      //     artworkUrl: "http://192.168.0.22:8000" + song_to_play.artworkUrl,
+      //     url: "http://94.189.212.58" + song_to_play.url,
+      //     artworkUrl: "http://94.189.212.58" + song_to_play.artworkUrl,
       //   };
       //   if (
       //     song_to_play &&
@@ -939,7 +946,7 @@ export function player() {
                   let id_azapisa = eval(playingTrack.mediaId);
                   // console.log(`${id_azapisa} | ${info_data?.Ime}`)
                   let response = await secure_fetch(
-                    `http://192.168.0.22:8000/bookmark/${info_data?.Ime}`,
+                    `http://94.189.212.58/bookmark/${info_data?.Ime}`,
                     {
                       method: "POST",
                       body: new URLSearchParams({
@@ -977,16 +984,13 @@ export function player() {
                     loaded_bookmark[playingTrack.mediaId] = {
                       artist: playingTrack.artist,
                       artworkUrl: playingTrack.artworkUrl.replace(
-                        "http://192.168.0.22:8000",
+                        "http://94.189.212.58",
                         "",
                       ),
                       id: playingTrack.mediaId,
                       extras: playingTrack.extras,
                       title: playingTrack.title,
-                      url: playingTrack.url.replace(
-                        "http://192.168.0.22:8000",
-                        "",
-                      ),
+                      url: playingTrack.url.replace("http://94.189.212.58", ""),
                     };
 
                     await download_save(

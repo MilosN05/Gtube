@@ -15,18 +15,10 @@
       "supportsTablet": true,
       "infoPList": {
         "UIBackgroundModes": ["audio"],
-        "NSAppTransportSecurity": {
-          "NSExceptionDomains": {
-            "94.189.212.58": {
-              "NSExceptionAllowsInsecureHTTPLoads": true,
-              "NSIncludesSubdomains": true
-            }
-          }
-        }
+        "NSAppTransportSecurity": { "NSAllowsArbitraryLoads": true }
       }
     },
     "android": {
-      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/images/9mapL.png"
@@ -69,6 +61,7 @@
         "expo-build-properties",
         {
           "android": {
+            "usesCleartextTraffic": true,
             "minSdkVersion": 26,
             "compileSdkVersion": 35,
             "targetSdkVersion": 35

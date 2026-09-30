@@ -20,7 +20,7 @@ export const outer_store = create((set) => ({
   set_is_connected_zus: (new_status) =>
     set((state) => {
       if (state.online_access == false && new_status && state.is_sactive) {
-        get_data(JSON.strinigify(state.info_data));
+        get_data(JSON.stringify(state.info_data));
       }
       return {
         is_connected: new_status,
@@ -45,7 +45,7 @@ let loaded_zustand_sbookmark = outer_store.getState().set_bookmark_zus;
 let loaded_zustand_s_info_data = outer_store.getState().set_info_data_zus;
 
 export async function get_data(result) {
-  let response = await fetch("http://94.189.212.58:8000/nalog/", {
+  let response = await fetch("http://94.189.212.58/nalog/", {
     method: "POST",
     body: result,
   });

@@ -29,7 +29,7 @@ async function unlike_song() {
   let id_azapisa = eval(loaded_bookmark[visible_song_options].mediaId);
   // console.log(id_azapisa)
   let response = await secure_fetch(
-    `http://192.168.0.22:8000/bookmark/${info_data?.Ime}`,
+    `http://94.189.212.58/bookmark/${info_data?.Ime}`,
     {
       method: "POST",
       body: new URLSearchParams({
@@ -122,7 +122,7 @@ export default function bookmark() {
                   <Image
                     source={{
                       uri: online_access
-                        ? `http://192.168.0.22:8000${loaded_bookmark?.[visible_song_options]?.artworkUrl}`
+                        ? `http://94.189.212.58${loaded_bookmark?.[visible_song_options]?.artworkUrl}`
                         : loaded_downloaded_md?.[visible_song_options]
                             ?.artworkUrl,
                     }}
@@ -408,7 +408,6 @@ export default function bookmark() {
 
                 let loaded_bookmark_keys_array = Object.keys(loaded_bookmark);
                 let paths_document_uri = Paths.document.info().uri;
-                let encoded_name_of_song = encodeURIComponent(item.title);
 
                 let meta_data_songs = JSON.parse(
                   await AsyncStorage.getItem("meta_data_songs"),
@@ -420,21 +419,21 @@ export default function bookmark() {
 
                   if (!loaded_downloaded_md[current_id]) {
                     await download_save(
-                      `http://192.168.0.22:8000${loaded_bookmark[current_id].url}`,
-                      `http://192.168.0.22:8000${loaded_bookmark[current_id].artworkUrl}`,
+                      `http://94.189.212.58${loaded_bookmark[current_id].url}`,
+                      `http://94.189.212.58${loaded_bookmark[current_id].artworkUrl}`,
                       loaded_bookmark[current_id].title,
                     );
 
                     const file_audio = new File(
                       paths_document_uri +
                         "songs/" +
-                        encoded_name_of_song +
+                        encodeURIComponent(loaded_bookmark[current_id].title) +
                         ".mp3",
                     );
                     const file_thumbnail = new File(
                       paths_document_uri +
                         "thumbnails/" +
-                        encoded_name_of_song +
+                        encodeURIComponent(loaded_bookmark[current_id].title) +
                         ".png",
                     );
 
@@ -442,7 +441,7 @@ export default function bookmark() {
                       // Alert.alert("Uspešno preuzeta pesma.")
                       meta_data_songs[current_id] = {
                         ...loaded_bookmark[current_id],
-                        artwork: file_thumbnail.info().uri,
+                        artworkUrl: file_thumbnail.info().uri,
                         url: file_audio.info().uri,
                       };
                     }
@@ -689,7 +688,7 @@ export default function bookmark() {
                     <Image
                       source={{
                         uri: online_access
-                          ? `http://192.168.0.22:8000${item.artworkUrl}`
+                          ? `http://94.189.212.58${item.artworkUrl}`
                           : item.artworkUrl,
                       }}
                       style={{ width: 64, height: 64, borderRadius: 4 }}

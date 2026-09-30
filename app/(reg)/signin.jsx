@@ -20,19 +20,19 @@ import { outer_store } from "../../store/store";
 
 let loaded_zustand_s_info_data = outer_store.getState().set_info_data_zus;
 let loaded_zustand_s_is_connected = outer_store.getState().set_is_connected_zus;
-let loaded_zustand_s_is_sactive = outer_store.getState().set_is_active_zus;
+let loaded_zustand_s_is_sactive = outer_store.getState().set_is_sactive_zus;
 
 async function log_in(email, sifra, objekat_r) {
   let state = await NetInfo.fetch();
 
   if (state.isInternetReachable == false) {
-    Alert.alert("Nema aktivne internet konekcije !");
+    objekat_r.error = "Nema aktivne internet konekcije !";
     return;
   }
 
   loaded_zustand_s_is_connected(true);
   try {
-    const response = await fetch("http://192.168.0.22:8000/logovanje/", {
+    const response = await fetch("http://94.189.212.58/logovanje/", {
       method: "POST",
       body: JSON.stringify({
         Email: email,
@@ -56,7 +56,7 @@ async function log_in(email, sifra, objekat_r) {
 }
 
 export async function request_data(result) {
-  let response = await fetch("http://192.168.0.22:8000/nalog/", {
+  let response = await fetch("http://94.189.212.58/nalog/", {
     method: "POST",
     body: result,
   });
@@ -304,16 +304,20 @@ export default function signIn() {
                         Sifra: sifra,
                         Email: email,
                       });
-                      if (isChecked)
-                        SecureStore.setItemAsync("info_nalog", info_nalog);
 
-                      try {
-                        await co_worker_main(info_nalog);
+                      // try {
+                      await co_worker_main(info_nalog);
+
+                      if (outer_store.getState().is_sactive) {
                         router.push("/(home)/main");
-                      } catch (e) {
-                        loaded_zustand_s_is_sactive(false);
-                        Alert.alert(`Server neaktivan !`);
-                      }
+                        if (isChecked)
+                          SecureStore.setItemAsync("info_nalog", info_nalog);
+                      } else Alert.alert(`Server neaktivan !`);
+
+                      // } catch (e) {
+                      //   loaded_zustand_s_is_sactive(false);
+                      //
+                      // }
                     }}
                   >
                     <Text

@@ -6,7 +6,10 @@ import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useRef, useState } from "react";
 import { Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { outer_store } from "../../store/store";
 
 let loaded_zustand_s_info_data = outer_store.getState().set_info_data_zus;
@@ -17,13 +20,13 @@ async function register(ime, email, telefon, datumr, sifra, objekat_r) {
   let state = await NetInfo.fetch();
 
   if (state.isInternetReachable == false) {
-    Alert.alert("Nema aktivne internet konekcije !");
+    objekat_r.error = "Nema aktivne internet konekcije !";
     return;
   }
   loaded_zustand_s_is_connected(true);
 
   try {
-    const response = await fetch("http://192.168.0.22:8000/registracija/", {
+    const response = await fetch("http://94.189.212.58/registracija/", {
       method: "POST",
       body: JSON.stringify({
         Ime: ime,
@@ -53,7 +56,7 @@ async function register(ime, email, telefon, datumr, sifra, objekat_r) {
   // objekat_r.id = result.id
 }
 
-export default function signIn() {
+export default function signUp() {
   const [ime, set_ime] = useState("");
   const [email, set_email] = useState("");
   const [telefon, set_telefon] = useState("");
@@ -74,7 +77,7 @@ export default function signIn() {
     );
     set_datumr(selectedDate);
   }
-
+  let insets = useSafeAreaInsets();
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <LinearGradient
@@ -82,11 +85,15 @@ export default function signIn() {
         start={{ x: 0, y: 0 }}
         locations={[0, 0.35, 0.8]}
         end={{ x: 1, y: 1 }}
-        style={{ height: "100%", backgroundColor: "green", zIndex: 333 }}
+        style={{
+          height: "100%",
+          backgroundColor: "green",
+          zIndex: 333,
+        }}
       >
         <View
           style={{
-            height: "15%",
+            maxHeight: "15%",
             justifyContent: "center",
             alignItems: "flex-start",
           }}
@@ -99,7 +106,7 @@ export default function signIn() {
               alignItems: "center",
               marginLeft: 15,
               gap: 20,
-              marginTop: 40,
+              marginTop: 60 - insets.top,
             }}
           >
             <TouchableOpacity
@@ -140,7 +147,8 @@ export default function signIn() {
         </View>
         <View
           style={{
-            height: "85%",
+            // height: "85%",
+            flex: 1,
             backgroundColor: "white",
             borderTopLeftRadius: 37,
             borderTopRightRadius: 37,
@@ -398,16 +406,13 @@ export default function signIn() {
                       Email: email,
                     });
 
-                    SecureStore.setItemAsync("info_nalog", info_nalog);
+                    await co_worker_main(info_nalog);
 
-                    try {
-                      await co_worker_main(info_nalog);
+                    if (outer_store.getState().is_sactive) {
                       router.push("/(home)/main");
-                    } catch (e) {
-                      loaded_zustand_s_is_sactive(false);
-                      Alert.alert(`Server neaktivan !`);
-                    }
-                    router.push("/(home)/main");
+                      if (isChecked)
+                        SecureStore.setItemAsync("info_nalog", info_nalog);
+                    } else Alert.alert(`Server neaktivan !`);
                   } else Alert.alert("Uslovi nisu ispunjeni !");
                 }}
               >
