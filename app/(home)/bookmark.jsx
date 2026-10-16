@@ -9,7 +9,7 @@ import { File, Paths } from "expo-file-system";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Animated,
@@ -18,6 +18,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useAnimatedValue,
   View,
 } from "react-native";
 import { toggleIcon } from "../(mplay)/audio";
@@ -29,7 +30,7 @@ async function unlike_song() {
   let id_azapisa = eval(loaded_bookmark[visible_song_options].mediaId);
   // console.log(id_azapisa)
   let response = await secure_fetch(
-    `http://94.189.212.58/bookmark/${info_data?.Ime}`,
+    `https://gtube-server.duckdns.org/bookmark/${info_data?.Ime}`,
     {
       method: "POST",
       body: new URLSearchParams({
@@ -50,8 +51,28 @@ async function unlike_song() {
   return await response.text();
 }
 
+const fade_in = (fade_anim) => {
+  // Will change fade_anim value to 1 in 0.3 seconds
+  Animated.timing(fade_anim, {
+    toValue: 1,
+    duration: 300,
+    useNativeDriver: true,
+  }).start();
+};
+
+const fade_out = (fade_anim) => {
+  // Will change fade_anim value to 0.3 in 0.3 seconds
+  Animated.timing(fade_anim, {
+    toValue: 0.3,
+    duration: 600,
+    useNativeDriver: true,
+  }).start();
+};
+
 export default function bookmark() {
   const [visible_song_options, set_visible_song_options] = useState(false);
+  const [number_of_downloaded_songs_f, set_number_of_downloaded_songs_f] =
+    useState(0);
 
   // const { playingTrack } = useAudioPro();
   const currently_played = useIsPlaying();
@@ -69,7 +90,8 @@ export default function bookmark() {
   let shuffled_play = outer_store((state) => state.shuffled_play);
 
   let opacity = useRef(new Animated.Value(1)).current;
-  console.log(loaded_downloaded_md);
+
+  // console.log(loaded_downloaded_md);
   return (
     <View style={{ display: "flex", flex: 1, backgroundColor: "#111425" }}>
       <Modal
@@ -122,7 +144,7 @@ export default function bookmark() {
                   <Image
                     source={{
                       uri: online_access
-                        ? `http://94.189.212.58${loaded_bookmark?.[visible_song_options]?.artworkUrl}`
+                        ? `https://gtube-server.duckdns.org${loaded_bookmark?.[visible_song_options]?.artworkUrl}`
                         : loaded_downloaded_md?.[visible_song_options]
                             ?.artworkUrl,
                     }}
@@ -180,22 +202,33 @@ export default function bookmark() {
             <View style={{ display: "flex", height: "70%", gap: 10 }}>
               <TouchableOpacity
                 onPress={async () => {
-                  // info_data.Bookmark[id_azapisa]=false
+                  const paths_document_uri = Paths.document.info().uri;
 
+                  let encoded_name_of_song = encodeURIComponent(
+                    loaded_bookmark[visible_song_options].title,
+                  );
+
+                  // info_data.Bookmark[id_azapisa]=false
+                  console.log(`${loaded_bookmark[visible_song_options].title}`);
                   const file_audio = new File(
-                    Paths.document,
-                    "songs",
-                    loaded_bookmark[visible_song_options].title + ".mp3",
+                    paths_document_uri +
+                      "songs/" +
+                      encoded_name_of_song +
+                      ".mp3",
                   );
                   const file_thumbnail = new File(
-                    Paths.document,
-                    "thumbnails",
-                    loaded_bookmark[visible_song_options].title + ".png",
+                    paths_document_uri +
+                      "thumbnails/" +
+                      encoded_name_of_song +
+                      ".png",
+                  );
+                  console.log(
+                    `${file_audio.info().exists} | ${file_audio.info().uri}`,
                   );
 
                   if (file_audio.exists) {
                     file_audio.delete();
-
+                    console.log("obrisan fajl");
                     if (!file_audio.exists)
                       console.log(
                         `Uspesno obrisan fajl: ${loaded_bookmark[visible_song_options].title + ".mp3"}`,
@@ -258,6 +291,11 @@ export default function bookmark() {
               <TouchableOpacity
                 onPress={async () => {
                   if (!online_access) return;
+                  const paths_document_uri = Paths.document.info().uri;
+
+                  let encoded_name_of_song = encodeURIComponent(
+                    loaded_bookmark[visible_song_options].title,
+                  );
 
                   let response_text = await unlike_song();
                   console.log(`CUVANJE: ${response_text}`);
@@ -265,15 +303,21 @@ export default function bookmark() {
                   if (response_text == -1) {
                     // info_data.Bookmark[visible_song_options]=false
 
+                    // info_data.Bookmark[id_azapisa]=false
+                    console.log(
+                      `${loaded_bookmark[visible_song_options].title}`,
+                    );
                     const file_audio = new File(
-                      Paths.document,
-                      "songs",
-                      loaded_bookmark[visible_song_options].title + ".mp3",
+                      paths_document_uri +
+                        "songs/" +
+                        encoded_name_of_song +
+                        ".mp3",
                     );
                     const file_thumbnail = new File(
-                      Paths.document,
-                      "thumbnails",
-                      loaded_bookmark[visible_song_options].title + ".png",
+                      paths_document_uri +
+                        "thumbnails/" +
+                        encoded_name_of_song +
+                        ".png",
                     );
 
                     if (file_audio.exists) {
@@ -407,7 +451,7 @@ export default function bookmark() {
                 }
 
                 let loaded_bookmark_keys_array = Object.keys(loaded_bookmark);
-                let paths_document_uri = Paths.document.info().uri;
+                const paths_document_uri = Paths.document.info().uri;
 
                 let meta_data_songs = JSON.parse(
                   await AsyncStorage.getItem("meta_data_songs"),
@@ -416,24 +460,27 @@ export default function bookmark() {
 
                 for (let i = 0; i < loaded_bookmark_keys_array.length; i++) {
                   let current_id = loaded_bookmark_keys_array[i];
+                  let encoded_name_of_song = encodeURIComponent(
+                    loaded_bookmark[current_id].title,
+                  );
 
                   if (!loaded_downloaded_md[current_id]) {
                     await download_save(
-                      `http://94.189.212.58${loaded_bookmark[current_id].url}`,
-                      `http://94.189.212.58${loaded_bookmark[current_id].artworkUrl}`,
+                      `https://gtube-server.duckdns.org${loaded_bookmark[current_id].url}`,
+                      `https://gtube-server.duckdns.org${loaded_bookmark[current_id].artworkUrl}`,
                       loaded_bookmark[current_id].title,
                     );
 
                     const file_audio = new File(
                       paths_document_uri +
                         "songs/" +
-                        encodeURIComponent(loaded_bookmark[current_id].title) +
+                        encoded_name_of_song +
                         ".mp3",
                     );
                     const file_thumbnail = new File(
                       paths_document_uri +
                         "thumbnails/" +
-                        encodeURIComponent(loaded_bookmark[current_id].title) +
+                        encoded_name_of_song +
                         ".png",
                     );
 
@@ -444,6 +491,11 @@ export default function bookmark() {
                         artworkUrl: file_thumbnail.info().uri,
                         url: file_audio.info().uri,
                       };
+                      set_number_of_downloaded_songs_f(
+                        number_of_downloaded_songs_f + 1,
+                      );
+
+                      // fade_in()
                     }
                   }
                 }
@@ -496,7 +548,9 @@ export default function bookmark() {
                   <Animated.View style={{ opacity }}>
                     <Ionicons
                       name={
-                        !currently_played || !bookmark_access ? "play" : "pause"
+                        !currently_played || !globalThis.bookmark_access
+                          ? "play"
+                          : "pause"
                       }
                       size={38}
                       color={"white"}
@@ -543,10 +597,15 @@ export default function bookmark() {
                           TrackPlayer.pause();
                         else if (
                           !TrackPlayer.isPlaying() &&
-                          TrackPlayer.getPlaybackState == PlaybackState.Ready &&
+                          TrackPlayer.getPlaybackState() ==
+                            PlaybackState.Ready &&
                           globalThis.bookmark_access
                         )
                           TrackPlayer.play();
+
+                        // console.log(
+                        //   `isplaying: ${TrackPlayer.isPlaying()} | ${TrackPlayer.getPlaybackState() == PlaybackState.Ready}`,
+                        // );
                       }}
                     ></Ionicons>
                   </Animated.View>
@@ -645,9 +704,55 @@ export default function bookmark() {
               </View>
             }
             renderItem={({ item, index }) => {
+              const Song_View = ({ children, style }) => {
+                const fade_anim = useAnimatedValue(
+                  loaded_downloaded_md[item.mediaId]?.url &&
+                    loaded_downloaded_md[item.mediaId]?.artworkUrl
+                    ? 1
+                    : 0.3,
+                );
+                // console.log(children);
+                console.log(
+                  !loaded_downloaded_md[item.mediaId] &&
+                    fade_anim.__getValue() == 1,
+                );
+
+                // console.log(
+                //   loaded_downloaded_md[item.mediaId]?.url &&
+                //     loaded_downloaded_md[item.mediaId]?.artworkUrl,
+                // );
+
+                // console.log(fade_anim.__getValue() == 1);
+                // console.log(fade_anim);
+
+                useEffect(() => {
+                  if (
+                    loaded_downloaded_md[item.mediaId] &&
+                    fade_anim.__getValue() == 0.3
+                  ) {
+                    fade_in(fade_anim);
+                    console.log(`sazvan fade_in: ${item.mediaId}`);
+                  } else if (
+                    !loaded_downloaded_md[item.mediaId] &&
+                    fade_anim.__getValue() == 1
+                  ) {
+                    fade_out(fade_anim);
+                    console.log(`sazvan fade_Out: ${item.mediaId}`);
+                  }
+                }, []);
+
+                // console.log(`SADA BIO ${item.mediaId.mediaId}: ${fade_anim}`);
+
+                return (
+                  <Animated.View style={{ ...style, opacity: fade_anim }}>
+                    {children}
+                  </Animated.View>
+                );
+              };
               // let is_current = playingTrack?.mediaId==item.mediaId
+
               return (
-                <View
+                <Song_View
                   style={{
                     display: "flex",
                     flexDirection: "row",
@@ -663,12 +768,13 @@ export default function bookmark() {
                       playingTrack && playingTrack.mediaId == item.mediaId
                         ? "#222640"
                         : "transparent",
-                    opacity:
-                      loaded_downloaded_md &&
-                      loaded_downloaded_md[item.mediaId]?.url &&
-                      loaded_downloaded_md[item.mediaId]?.artworkUrl
-                        ? 1
-                        : 0.3,
+                    // opacity:
+                    // loaded_downloaded_md &&
+                    // loaded_downloaded_md[item.mediaId]?.url &&
+                    // loaded_downloaded_md[item.mediaId]?.artworkUrl
+                    //   ? 1
+                    //   : 0.3,
+                    // fade_anim,
                   }}
                 >
                   <TouchableOpacity
@@ -688,7 +794,7 @@ export default function bookmark() {
                     <Image
                       source={{
                         uri: online_access
-                          ? `http://94.189.212.58${item.artworkUrl}`
+                          ? `https://gtube-server.duckdns.org${item.artworkUrl}`
                           : item.artworkUrl,
                       }}
                       style={{ width: 64, height: 64, borderRadius: 4 }}
@@ -738,7 +844,7 @@ export default function bookmark() {
                       ></Ionicons>
                     </TouchableOpacity>
                   </View>
-                </View>
+                </Song_View>
               );
             }}
             contentContainerStyle={{

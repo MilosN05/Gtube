@@ -41,6 +41,7 @@ async function is_logged() {
       listeners();
     } else await co_worker_main(result);
 
+    console.log("test");
     router.push("/(home)/main");
   }
 }

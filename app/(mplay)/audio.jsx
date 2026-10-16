@@ -38,11 +38,14 @@ async function get_data(funkcija, id) {
     //IDEJA ZA POBOLJŠANJE PERFOMANSI
     //Umesto da šalješ GET uvek, ako korisnik ima pesmu koja je trenutno puštena u plejeru a ista kao i onoj putem koje se ulazi u ovaj ekran
     //Onda preskoči i iskoristi postojuće, sada to nisam uradio jer nemam mnogo vremena, a moram celu logiku rada da menjam.
-    const response = await fetch("http://94.189.212.58/nasumicniZapisi/", {
-      method: "POST",
-      body: new URLSearchParams({ brojSnimaka: 10, idSnimka: id }).toString(),
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    });
+    const response = await fetch(
+      "https://gtube-server.duckdns.org/nasumicniZapisi/",
+      {
+        method: "POST",
+        body: new URLSearchParams({ brojSnimaka: 10, idSnimka: id }).toString(),
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      },
+    );
 
     // console.log(response)
     if (!response.ok) {
@@ -51,13 +54,13 @@ async function get_data(funkcija, id) {
     }
 
     const data = await response.json();
-    // data.artworkUrl = "http://94.189.212.58"+data.artworkUrl
-    // data.url= "http://94.189.212.58"+data.url
+    // data.artworkUrl = "https://gtube-server.duckdns.org"+data.artworkUrl
+    // data.url= "https://gtube-server.duckdns.org"+data.url
     // data.url = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
 
     data.forEach((data) => {
-      data.artworkUrl = "http://94.189.212.58" + data.artworkUrl;
-      data.url = "http://94.189.212.58" + data.url;
+      data.artworkUrl = "https://gtube-server.duckdns.org" + data.artworkUrl;
+      data.url = "https://gtube-server.duckdns.org" + data.url;
       data.extras = { lyrics: data.lyrics };
     });
     // console.log(data)
@@ -82,16 +85,16 @@ async function get_data_bookmark(funkcija, id, online_access) {
 
     loaded_bookmark = loaded_bookmark.map((data) => ({
       ...data,
-      artworkUrl: "http://94.189.212.58" + data.artworkUrl,
-      url: "http://94.189.212.58" + data.url,
+      artworkUrl: "https://gtube-server.duckdns.org" + data.artworkUrl,
+      url: "https://gtube-server.duckdns.org" + data.url,
       extras: { lyrics: data.lyrics },
     }));
 
     // console.log(loaded_bookmark);
 
     // loaded_bookmark.forEach((data) => {
-    //   data.artworkUrl = "http://94.189.212.58" + data.artworkUrl;
-    //   data.url = "http://94.189.212.58" + data.url;
+    //   data.artworkUrl = "https://gtube-server.duckdns.org" + data.artworkUrl;
+    //   data.url = "https://gtube-server.duckdns.org" + data.url;
     // });
   } else {
     loaded_downloaded_md = Object.values(loaded_downloaded_md);
@@ -177,6 +180,8 @@ export function player() {
 
   let loaded_bookmark = outer_store((state) => state.Bookmark);
   let loaded_downloaded_md = outer_store((state) => state.downloaded_info);
+  let loaded_download_md = outer_store((state) => state.set_downloaded_zus);
+
   let info_data = outer_store((state) => state.info_data);
   let online_access = outer_store((state) => state.online_access);
   let shuffled_play = outer_store((state) => state.shuffled_play);
@@ -201,13 +206,13 @@ export function player() {
       // let song_to_play = online_access
       //   ? loaded_bookmark[id]
       //   : loaded_downloaded_md[id];
-      // // song_to_play.url = "http://94.189.212.58" + song_to_play.url;
-      // // song_to_play.artworkUrl = "http://94.189.212.58" + song_to_play.artworkUrl;
+      // // song_to_play.url = "https://gtube-server.duckdns.org" + song_to_play.url;
+      // // song_to_play.artworkUrl = "https://gtube-server.duckdns.org" + song_to_play.artworkUrl;
       // if (online_access)
       //   song_to_play = {
       //     ...song_to_play,
-      //     url: "http://94.189.212.58" + song_to_play.url,
-      //     artworkUrl: "http://94.189.212.58" + song_to_play.artworkUrl,
+      //     url: "https://gtube-server.duckdns.org" + song_to_play.url,
+      //     artworkUrl: "https://gtube-server.duckdns.org" + song_to_play.artworkUrl,
       //   };
       //   if (
       //     song_to_play &&
@@ -946,7 +951,7 @@ export function player() {
                   let id_azapisa = eval(playingTrack.mediaId);
                   // console.log(`${id_azapisa} | ${info_data?.Ime}`)
                   let response = await secure_fetch(
-                    `http://94.189.212.58/bookmark/${info_data?.Ime}`,
+                    `https://gtube-server.duckdns.org/bookmark/${info_data?.Ime}`,
                     {
                       method: "POST",
                       body: new URLSearchParams({
@@ -984,20 +989,25 @@ export function player() {
                     loaded_bookmark[playingTrack.mediaId] = {
                       artist: playingTrack.artist,
                       artworkUrl: playingTrack.artworkUrl.replace(
-                        "http://94.189.212.58",
+                        "https://gtube-server.duckdns.org",
                         "",
                       ),
                       id: playingTrack.mediaId,
                       extras: playingTrack.extras,
                       title: playingTrack.title,
-                      url: playingTrack.url.replace("http://94.189.212.58", ""),
+                      url: playingTrack.url.replace(
+                        "https://gtube-server.duckdns.org",
+                        "",
+                      ),
                     };
+                    loaded_zustand_s_bookmark({ ...loaded_bookmark });
 
                     await download_save(
                       playingTrack.url,
                       playingTrack.artworkUrl,
                       playingTrack.title,
                     );
+                    console.log("TESTTTT");
 
                     const file_audio = new File(
                       paths_document_uri +
@@ -1025,8 +1035,6 @@ export function player() {
                         artworkUrl: file_thumbnail.info().uri,
                         url: file_audio.info().uri,
                       };
-
-                      console.log(meta_data_songs);
 
                       AsyncStorage.setItem(
                         "meta_data_songs",
@@ -1076,10 +1084,11 @@ export function player() {
                         JSON.stringify(meta_data_songs),
                       );
                       loaded_download_md(meta_data_songs);
+                      // console.log("uspesno obrisano");
+                      loaded_zustand_s_bookmark({ ...loaded_bookmark });
                     }
                   }
                   // console.log(parsed_data)
-                  loaded_zustand_s_bookmark({ ...loaded_bookmark });
 
                   // console.log(id_azapisa)
                 }}
@@ -1091,14 +1100,14 @@ export function player() {
                 <Ionicons
                   name={
                     playingTrack?.mediaId &&
-                    loaded_bookmark[playingTrack.mediaId]
+                    loaded_bookmark?.[playingTrack.mediaId]
                       ? "heart"
                       : "heart-outline"
                   }
                   size={32}
                   color={
                     playingTrack?.mediaId &&
-                    loaded_bookmark[playingTrack.mediaId]
+                    loaded_bookmark?.[playingTrack.mediaId]
                       ? "red"
                       : "white"
                   }

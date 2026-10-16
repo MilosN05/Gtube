@@ -45,9 +45,14 @@ let loaded_zustand_sbookmark = outer_store.getState().set_bookmark_zus;
 let loaded_zustand_s_info_data = outer_store.getState().set_info_data_zus;
 
 export async function get_data(result) {
-  let response = await fetch("http://94.189.212.58/nalog/", {
+  let controller = new AbortController();
+  setTimeout(() => {
+    controller.abort();
+  }, 5000);
+  let response = await fetch("https://gtube-server.duckdns.org/nalog/", {
     method: "POST",
     body: result,
+    signal: controller.signal,
   });
 
   if (!response.ok) {

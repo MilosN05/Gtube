@@ -26,16 +26,19 @@ async function register(ime, email, telefon, datumr, sifra, objekat_r) {
   loaded_zustand_s_is_connected(true);
 
   try {
-    const response = await fetch("http://94.189.212.58/registracija/", {
-      method: "POST",
-      body: JSON.stringify({
-        Ime: ime,
-        Email: email,
-        Telefon: telefon,
-        DatumR: datumr,
-        Sifra: sifra,
-      }),
-    });
+    const response = await fetch(
+      "https://gtube-server.duckdns.org/registracija/",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          Ime: ime,
+          Email: email,
+          Telefon: telefon,
+          DatumR: datumr,
+          Sifra: sifra,
+        }),
+      },
+    );
 
     if (!response.ok) {
       objekat_r.error = 1;

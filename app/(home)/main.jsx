@@ -73,7 +73,7 @@ export async function download_save(url_audio, url_thumbnail, name_of_song) {
 
 async function get_data(funkcija, page, search_params) {
   try {
-    const response = await fetch(`http://94.189.212.58/${page}/`, {
+    const response = await fetch(`https://gtube-server.duckdns.org/${page}/`, {
       method: "POST",
       body: new URLSearchParams(search_params).toString(),
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -87,13 +87,13 @@ async function get_data(funkcija, page, search_params) {
     }
 
     const data = await response.json();
-    // data.artworkUrl = "http://94.189.212.58"+data.artworkUrl
-    // data.url= "http://94.189.212.58"+data.url
+    // data.artworkUrl = "https://gtube-server.duckdns.org"+data.artworkUrl
+    // data.url= "https://gtube-server.duckdns.org"+data.url
     // data.url = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
 
     data.forEach((data) => {
-      data.artworkUrl = "http://94.189.212.58" + data.artworkUrl;
-      data.url = "http://94.189.212.58" + data.url;
+      data.artworkUrl = "https://gtube-server.duckdns.org" + data.artworkUrl;
+      data.url = "https://gtube-server.duckdns.org" + data.url;
     });
     // console.log(data)
 
@@ -829,7 +829,7 @@ export default function HomeScreen() {
                           let id_azapisa = eval(item.mediaId);
                           console.log(`KORISNIK KOJI SKIDA: ${info_data?.Ime}`);
                           let response = await secure_fetch(
-                            `http://94.189.212.58/bookmark/${info_data?.Ime}`,
+                            `https://gtube-server.duckdns.org/bookmark/${info_data?.Ime}`,
                             {
                               method: "POST",
                               body: new URLSearchParams({
@@ -868,12 +868,15 @@ export default function HomeScreen() {
                             loaded_bookmark[id_azapisa] = {
                               ...item,
                               artworkUrl: item.artworkUrl.replace(
-                                "http://94.189.212.58",
+                                "https://gtube-server.duckdns.org",
                                 "",
                               ),
-                              url: item.url.replace("http://94.189.212.58", ""),
+                              url: item.url.replace(
+                                "https://gtube-server.duckdns.org",
+                                "",
+                              ),
                             };
-
+                            loaded_zustand_s_bookmark({ ...loaded_bookmark });
                             console.log(`URL: ${item.url}`);
                             await download_save(
                               item.url,
@@ -988,10 +991,10 @@ export default function HomeScreen() {
                                 JSON.stringify(meta_data_songs),
                               );
                               loaded_download_md(meta_data_songs);
+                              loaded_zustand_s_bookmark({ ...loaded_bookmark });
                             }
                           }
                           // console.log(info_data)
-                          loaded_zustand_s_bookmark({ ...loaded_bookmark });
 
                           // console.log(id_azapisa)
                         }}

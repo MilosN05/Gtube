@@ -32,13 +32,16 @@ async function log_in(email, sifra, objekat_r) {
 
   loaded_zustand_s_is_connected(true);
   try {
-    const response = await fetch("http://94.189.212.58/logovanje/", {
-      method: "POST",
-      body: JSON.stringify({
-        Email: email,
-        Sifra: sifra,
-      }),
-    });
+    const response = await fetch(
+      "https://gtube-server.duckdns.org/logovanje/",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          Email: email,
+          Sifra: sifra,
+        }),
+      },
+    );
 
     if (!response.ok) {
       objekat_r.error = 1;
@@ -56,7 +59,7 @@ async function log_in(email, sifra, objekat_r) {
 }
 
 export async function request_data(result) {
-  let response = await fetch("http://94.189.212.58/nalog/", {
+  let response = await fetch("https://gtube-server.duckdns.org/nalog/", {
     method: "POST",
     body: result,
   });

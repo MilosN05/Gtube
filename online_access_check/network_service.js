@@ -9,9 +9,10 @@ async function check_server() {
     let controller = new AbortController();
     setTimeout(() => {
       controller.abort();
-    }, 1500);
+    }, 5000);
     //ako razvijaš server u produkciju ovde stavi port konkretnije tačnu ip adresu od servera koji SADRŽI sve podatke tj koji je glavnni a ne od NGINX ili APACHE-A !
-    await fetch("http://94.189.212.58:8000/", {
+    // MADA u sustini mozes i od nginx/apache
+    await fetch("https://gtube-server.duckdns.org/", {
       signal: controller.signal,
     });
 

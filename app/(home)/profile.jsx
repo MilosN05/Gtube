@@ -54,14 +54,17 @@ export default function profile() {
     form_data.append("Email", info_data.Email);
     form_data.append("Ime", info_data.Ime);
 
-    let response = await secure_fetch("http://94.189.212.58/unosProfilne/", {
-      method: "POST",
-      body: form_data,
-      headers: {
-        "Content-Type": "multipart/form-data",
+    let response = await secure_fetch(
+      "https://gtube-server.duckdns.org/unosProfilne/",
+      {
+        method: "POST",
+        body: form_data,
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        cache: "no-store",
       },
-      cache: "no-store",
-    });
+    );
 
     if (response == -9999) return;
     if (!response.ok) {
@@ -182,7 +185,7 @@ export default function profile() {
         <TouchableOpacity onPress={() => choose_image()}>
           <Image
             source={{
-              uri: `http://94.189.212.58/media/${info_data?.Profilna}?t=${new Date().getTime()}`,
+              uri: `https://gtube-server.duckdns.org/media/${info_data?.Profilna}?t=${new Date().getTime()}`,
             }}
             style={{
               width: 130,
