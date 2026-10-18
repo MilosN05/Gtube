@@ -181,7 +181,7 @@ export default function uploadF() {
                         "Pesma već postoji u bazi !",
                       ];
                       let socket = new WebSocket(
-                        "ws://94.189.212.58/ws/objavaSnimaka/",
+                        "wss://gtube-server.duckdns.org/ws/objavaSnimaka/",
                       );
 
                       set_preuzimanje(true);

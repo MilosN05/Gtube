@@ -992,7 +992,7 @@ export function player() {
                         "https://gtube-server.duckdns.org",
                         "",
                       ),
-                      id: playingTrack.mediaId,
+                      mediaId: playingTrack.mediaId,
                       extras: playingTrack.extras,
                       title: playingTrack.title,
                       url: playingTrack.url.replace(
@@ -1041,7 +1041,8 @@ export function player() {
                         JSON.stringify(meta_data_songs),
                       );
                       loaded_download_md(meta_data_songs);
-
+                      // console.log("PREUZETA PESMAAAAAAAAAAAAAAAAAAAAAAAAA");
+                      // console.log(outer_store.getState().downloaded_info);
                       // console.log(file_audio.info())
                     } else {
                       Alert.alert(

@@ -388,7 +388,14 @@ export default function HomeScreen() {
               <FlatList
                 data={results}
                 renderItem={({ item, index }) => (
-                  <View
+                  <TouchableOpacity
+                    onPress={() => {
+                      globalThis.bookmark_access = false;
+                      router.push({
+                        pathname: "/(mplay)/audio",
+                        params: { id: item.mediaId },
+                      });
+                    }}
                     style={{
                       display: "flex",
                       flexDirection: "row",
@@ -397,21 +404,12 @@ export default function HomeScreen() {
                       width: "100%",
                     }}
                   >
-                    <TouchableOpacity
-                      style={styles.coverShadow}
-                      onPress={() => {
-                        globalThis.bookmark_access = false;
-                        router.push({
-                          pathname: "/(mplay)/audio",
-                          params: { id: item.mediaId },
-                        });
-                      }}
-                    >
+                    <View style={styles.coverShadow}>
                       <Image
                         source={{ uri: item.artworkUrl }}
                         style={{ width: 64, height: 64, borderRadius: 4 }}
                       ></Image>
-                    </TouchableOpacity>
+                    </View>
                     <View style={{ flex: 1 }}>
                       <Text
                         style={{ color: "white", fontFamily: "MontserratBold" }}
@@ -428,7 +426,7 @@ export default function HomeScreen() {
                         {item.artist}
                       </Text>
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 )}
                 contentContainerStyle={{
                   gap: 10,

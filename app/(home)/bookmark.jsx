@@ -26,7 +26,9 @@ import { secure_fetch } from "../../scripts/secure_fetch";
 import { outer_store } from "../../store/store";
 import { download_save } from "./main";
 
-async function unlike_song() {
+async function unlike_song(visible_song_options) {
+  let info_data = outer_store.getState().info_data;
+  let loaded_bookmark = outer_store.getState().Bookmark;
   let id_azapisa = eval(loaded_bookmark[visible_song_options].mediaId);
   // console.log(id_azapisa)
   let response = await secure_fetch(
@@ -297,7 +299,7 @@ export default function bookmark() {
                     loaded_bookmark[visible_song_options].title,
                   );
 
-                  let response_text = await unlike_song();
+                  let response_text = await unlike_song(visible_song_options);
                   console.log(`CUVANJE: ${response_text}`);
 
                   if (response_text == -1) {
@@ -711,16 +713,19 @@ export default function bookmark() {
                     ? 1
                     : 0.3,
                 );
+                console.log(item.mediaId);
+
                 // console.log(children);
-                console.log(
-                  !loaded_downloaded_md[item.mediaId] &&
-                    fade_anim.__getValue() == 1,
-                );
+                // console.log(
+                //   !loaded_downloaded_md[item.mediaId] &&
+                //     fade_anim.__getValue() == 1,
+                // );
 
                 // console.log(
                 //   loaded_downloaded_md[item.mediaId]?.url &&
                 //     loaded_downloaded_md[item.mediaId]?.artworkUrl,
                 // );
+                // console.log(loaded_downloaded_md[item.mediaId]);
 
                 // console.log(fade_anim.__getValue() == 1);
                 // console.log(fade_anim);
@@ -765,7 +770,9 @@ export default function bookmark() {
                     borderBottomLeftRadius: 4,
                     width: "100%",
                     backgroundColor:
-                      playingTrack && playingTrack.mediaId == item.mediaId
+                      playingTrack &&
+                      playingTrack.mediaId == item.mediaId &&
+                      globalThis.bookmark_access
                         ? "#222640"
                         : "transparent",
                     // opacity:
@@ -813,7 +820,9 @@ export default function bookmark() {
                       <Text
                         style={{
                           color:
-                            playingTrack && playingTrack.mediaId == item.mediaId
+                            playingTrack &&
+                            playingTrack.mediaId == item.mediaId &&
+                            globalThis.bookmark_access
                               ? "#EC786B"
                               : "white",
                           fontFamily: "MontserratBold",
