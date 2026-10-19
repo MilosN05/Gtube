@@ -51,8 +51,10 @@ async function log_in(email, sifra, objekat_r) {
     const result = await response.json();
 
     if (result == 0) objekat_r.error = 2;
+    else if (result.error) objekat_r.error = result.error;
     return;
   } catch {
+    // console.log("AAAAAAAAAAA");
     loaded_zustand_s_is_sactive(false);
     objekat_r.error = "Server je offline !";
   }
@@ -310,6 +312,10 @@ export default function signIn() {
 
                       // try {
                       await co_worker_main(info_nalog);
+
+                      console.log(
+                        `TESTTT: ${outer_store.getState().is_sactive}`,
+                      );
 
                       if (outer_store.getState().is_sactive) {
                         router.push("/(home)/main");

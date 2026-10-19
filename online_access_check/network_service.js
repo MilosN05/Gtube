@@ -15,7 +15,7 @@ async function check_server() {
     await fetch("https://gtube-server.duckdns.org/", {
       signal: controller.signal,
     });
-
+    console.log("server aktivan");
     loaded_zustand_s_is_sactive(true);
   } catch (error) {
     console.log(`sazvano u network_service: ${error}`);
@@ -25,7 +25,7 @@ async function check_server() {
 
 export async function listeners() {
   if (!globalThis.loaded_interval) {
-    check_server();
+    await check_server();
     setInterval(check_server, 30000);
     NetInfo.addEventListener((state) => {
       loaded_zustand_s_is_connected(state.isInternetReachable);
@@ -36,10 +36,11 @@ export async function listeners() {
 }
 
 export async function co_worker_main(result) {
-  listeners();
+  await listeners();
 
   try {
     await get_data(result);
+    console.log("sdfsdf");
   } catch (error) {
     console.log(error);
     loaded_zustand_s_is_sactive(false);
